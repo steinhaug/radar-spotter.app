@@ -111,6 +111,7 @@ include_once 'config.php'; // Contains API tokens and configuration
 
     <!-- Scripts -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
+    <script src="view-setroute.js"></script>
     <script src="navigation-core.js"></script>
     <script src="gps-simulator.js"></script>
 </body>

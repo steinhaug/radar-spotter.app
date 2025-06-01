@@ -27,7 +27,7 @@ class NavigationCore {
     init() {
         this.initializeMap();
         this.bindEventListeners();
-        this.loadRadarPins();
+        
         this.updateStatus('gps-status', 'Initialiserer...');
     }
     
@@ -101,6 +101,9 @@ class NavigationCore {
                 'circle-stroke-color': '#ffffff'
             }
         });
+
+        this.loadRadarPins();
+
     }
     
     bindEventListeners() {
