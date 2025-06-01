@@ -347,6 +347,14 @@ class GpsSimulator {
         }
         return null;
     }
+
+    // Legg til denne metoden i GpsSimulator-klassen:
+    loadGeneratedLog(gpsLog) {
+        this.gpsLog = gpsLog;
+        this.updateSimulatorStatus(`Rute-logg lastet: ${gpsLog.length} punkter`);
+        console.log('Generated GPS log loaded:', gpsLog.length, 'points');
+    }
+
 }
 
 // Initialize GPS simulator when DOM is loaded

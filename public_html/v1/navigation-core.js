@@ -3,8 +3,8 @@
 class NavigationCore {
     constructor() {
         // Mapbox token - må settes til din egen token
-        mapboxgl.accessToken = 'pk.eyJ1IjoiYm9zc21hbjc1ODEiLCJhIjoiY2xmb3E5bHQ3MHVpYzN1bWhmaWoyN3h2OSJ9.mPV4SK4sSBApOHp6evb78A'; // SETT DIN TOKEN HER
-        
+        mapboxgl.accessToken = window.APP_CONFIG.mapboxToken;
+
         this.map = null;
         this.isNavigationActive = false;
         this.currentPosition = null;
@@ -35,7 +35,7 @@ class NavigationCore {
         this.map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/dark-v11',
-            center: [8.0, 58.15], // Kristiansand
+            center: window.APP_CONFIG.defaultCenter,
             zoom: 12,
             bearing: 0,
             pitch: 0
@@ -134,6 +134,12 @@ class NavigationCore {
         document.getElementById('gps-log-upload').addEventListener('change', (e) => {
             this.handleGpsLogUpload(e);
         });
+
+        // Etter eksisterende event listeners, legg til:
+        document.getElementById('generate-from-route').addEventListener('click', () => {
+            this.generateGpsFromRoute();
+        });
+
     }
     
     startNavigation() {
@@ -196,6 +202,12 @@ class NavigationCore {
         this.checkRadarWarnings();
         
         this.updateStatus('gps-status', `GPS aktiv (±${Math.round(coords.accuracy)}m)`);
+
+        // Etter existing code i handleGpsUpdate(), legg til:
+        if (window.viewSetRoute) {
+            window.viewSetRoute.updateGpsCoordinates(this.currentPosition);
+        }
+
     }
     
     handleGpsError(error) {
@@ -433,7 +445,17 @@ class NavigationCore {
         };
         reader.readAsText(file);
     }
-    
+
+    generateGpsFromRoute() {
+        if (window.viewSetRoute) {
+            const gpsLog = window.viewSetRoute.generateGpsLogFromRoute();
+            if (gpsLog && window.gpsSimulator) {
+                window.gpsSimulator.loadGeneratedLog(gpsLog);
+                this.updateStatus('gps-status', 'GPS-logg generert fra rute');
+            }
+        }
+    }    
+
     updateStatus(elementId, text) {
         const element = document.getElementById(elementId);
         if (element) {
