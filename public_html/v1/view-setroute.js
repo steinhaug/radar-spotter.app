@@ -638,6 +638,12 @@ class ViewSetRoute {
     togglePanel(panelId) {
         const panel = document.getElementById(panelId);
         panel.classList.toggle('collapsed');
+
+        // Bring panel to front when opening
+        if (!panel.classList.contains('collapsed')) {
+            this.bringPanelToFront(panelId);
+        }
+
     }
     
     getStartCoordinates() {
@@ -755,13 +761,40 @@ class ViewSetRoute {
         return (heading + 360) % 360;
     }
 
+    // ==================== PANEL Z-INDEX MANAGEMENT ====================
 
+    bringPanelToFront(activePanelId) {
+        // List of all draggable panels
+        const panelIds = ['display-panel', 'route-panel'];
+        
+        // Set all panels to low z-index
+        panelIds.forEach(id => {
+            const panel = document.getElementById(id);
+            if (panel) {
+                panel.style.zIndex = '1000';
+            }
+        });
+        
+        // Set active panel to high z-index
+        const activePanel = document.getElementById(activePanelId);
+        if (activePanel) {
+            activePanel.style.zIndex = '1100';
+        }
+    }
 
     // ==================== DRAG FUNCTIONALITY ====================
 
     initializeDragFunctionality() {
         this.makePanelDraggable('display-panel');
         this.makePanelDraggable('route-panel');
+    
+        // Add click listeners to bring panels to front
+        ['display-panel', 'route-panel'].forEach(panelId => {
+            const panel = document.getElementById(panelId);
+            panel.addEventListener('mousedown', () => {
+                this.bringPanelToFront(panelId);
+            });
+        });
     }
 
     makePanelDraggable(panelId) {
