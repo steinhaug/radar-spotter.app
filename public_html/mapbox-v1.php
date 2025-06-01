@@ -1,0 +1,117 @@
+<?php
+// index.php - Main radar navigation system
+include_once 'config.php'; // Contains API tokens and configuration
+?>
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Navigation System</title>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Control Panel -->
+        <div id="control-panel">
+            <div class="control-group">
+                <h3>Navigation Control</h3>
+                <button id="start-navigation" class="btn primary">Start Navigation</button>
+                <button id="stop-navigation" class="btn secondary">Stop Navigation</button>
+                <button id="center-map" class="btn secondary">Center på posisjon</button>
+            </div>
+            
+            <div class="control-group">
+                <h3>GPS Testing</h3>
+                <button id="start-simulation" class="btn primary">Start GPS Simulering</button>
+                <button id="stop-simulation" class="btn secondary">Stop Simulering</button>
+                <input type="file" id="gps-log-upload" accept=".gpx,.kml,.json" style="display: none;">
+                <button id="load-gps-log" class="btn secondary">Last inn GPS logg</button>
+                <button id="generate-from-route" class="btn secondary">Generer fra rute</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Radar Pins</h3>
+                <button id="toggle-pins" class="btn secondary">Vis/Skjul Pins</button>
+                <button id="add-pin-mode" class="btn secondary">Legg til Pin</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Status</h3>
+                <div id="status-display">
+                    <div class="status-item">
+                        <span class="label">GPS Status:</span>
+                        <span id="gps-status" class="status">Ikke tilkoblet</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Navigasjon:</span>
+                        <span id="nav-status" class="status">Inaktiv</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Nærmeste radar:</span>
+                        <span id="nearest-radar" class="status">Ingen</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Distanse:</span>
+                        <span id="radar-distance" class="status">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Aktiv rute:</span>
+                        <span id="active-route" class="status">Ingen</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div id="map-container">
+            <div id="map"></div>
+            
+            <!-- Navigation overlay -->
+            <div id="navigation-overlay" class="hidden">
+                <div class="nav-info">
+                    <div id="speed-display">
+                        <span class="speed-value">0</span>
+                        <span class="speed-unit">km/h</span>
+                    </div>
+                    <div id="direction-display">
+                        <div class="compass-arrow"></div>
+                        <span class="direction-text">N</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radar warning overlay -->
+            <div id="radar-warning" class="warning-overlay hidden">
+                <div class="warning-content">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-text">
+                        <h4>RADARKONTROLL</h4>
+                        <p id="warning-distance">500m fremover</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Include floating panels -->
+            <?php include 'display.php'; ?>
+            <?php include 'set_route.php'; ?>
+        </div>
+    </div>
+
+    <!-- Pass PHP configuration to JavaScript -->
+    <script>
+        window.APP_CONFIG = {
+            mapboxToken: '<?php echo MAPBOX_TOKEN; ?>',
+            apiBaseUrl: '<?php echo API_BASE_URL; ?>',
+            defaultCenter: [<?php echo DEFAULT_CENTER_LNG; ?>, <?php echo DEFAULT_CENTER_LAT; ?>],
+            defaultZoom: <?php echo DEFAULT_ZOOM; ?>
+        };
+    </script>
+
+    <!-- Scripts -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
+    <script src="navigation-core.js"></script>
+    <script src="gps-simulator.js"></script>
+</body>
+</html>

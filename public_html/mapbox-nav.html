@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>MapBox Navigation Test</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js'></script>
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css' />
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .controls h3 { margin-top: 0; }
+        .controls button {
+            margin: 5px 0;
+            padding: 8px 12px;
+            width: 100%;
+            background: #007cbf;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover { background: #005a87; }
+        .gps-status {
+            padding: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .gps-active { background: #d4edda; color: #155724; }
+        .gps-inactive { background: #f8d7da; color: #721c24; }
+        .route-info {
+            background: #e7f3ff;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .mapboxgl-ctrl-directions {
+            max-width: 280px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h3>🚗 Navigation Test</h3>
+        
+        <div id="gpsStatus" class="gps-status gps-inactive">
+            GPS: Ikke tilkoblet
+        </div>
+        
+        <button onclick="startGPSTracking()">Start GPS Tracking</button>
+        <button onclick="stopGPSTracking()">Stopp GPS Tracking</button>
+        <button onclick="centerOnPosition()">Sentrer på min posisjon</button>
+        
+        <div class="route-info" id="routeInfo" style="display:none;">
+            <strong>Rute info:</strong><br>
+            <span id="routeDistance">-</span><br>
+            <span id="routeDuration">-</span>
+        </div>
+        
+        <hr>
+        <h4>Test destinasjoner (Oslo):</h4>
+        <button onclick="navigateTo(10.7522, 59.9139, 'Oslo Sentrum')">Oslo Sentrum</button>
+        <button onclick="navigateTo(10.7387, 59.9131, 'Operahuset')">Operahuset</button>
+        <button onclick="navigateTo(10.7580, 59.9111, 'Aker Brygge')">Aker Brygge</button>
+        <button onclick="navigateTo(10.7362, 59.9056, 'Munch Museum')">Munch Museum</button>
+        
+        <hr>
+        <button onclick="clearRoute()">Fjern rute</button>
+        
+        <div style="margin-top: 15px; font-size: 11px; color: #666;">
+            <strong>Tips:</strong><br>
+            • Klikk på kartet for å sette destinasjon<br>
+            • Dra i rutepunktene for å endre rute<br>
+            • GPS krever HTTPS i produksjon
+        </div>
+    </div>
+    
+    <div id='map'></div>
+    
+    <script>
+        // SETT INN DIN MAPBOX TOKEN HER
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYm9zc21hbjc1ODEiLCJhIjoiY2xmb3E5bHQ3MHVpYzN1bWhmaWoyN3h2OSJ9.mPV4SK4sSBApOHp6evb78A';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [10.7522, 59.9139], // Oslo sentrum
+            zoom: 13
+        });
+        
+        // Directions (navigasjon) plugin
+        const directions = new MapboxDirections({
+            accessToken: mapboxgl.accessToken,
+            unit: 'metric',
+            profile: 'mapbox/driving',
+            alternatives: true,
+            geometries: 'geojson',
+            controls: {
+                instructions: true,
+                profileSwitcher: true
+            },
+            flyTo: false
+        });
+        
+        map.addControl(directions, 'top-left');
+        
+        // GPS tracking variabler
+        let gpsWatchId = null;
+        let currentPositionMarker = null;
+        let isGPSActive = false;
+        
+        // Legg til navigasjonskontroller
+        map.addControl(new mapboxgl.NavigationControl());
+        map.addControl(new mapboxgl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: true
+            },
+            trackUserLocation: true,
+            showUserHeading: true
+        }));
+        
+        // GPS tracking funksjoner
+        function startGPSTracking() {
+            if (navigator.geolocation) {
+                gpsWatchId = navigator.geolocation.watchPosition(
+                    updatePosition,
+                    handleGPSError,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 1000
+                    }
+                );
+                isGPSActive = true;
+                updateGPSStatus('GPS: Aktiv - søker posisjon...', true);
+            } else {
+                alert('GPS ikke støttet i denne nettleseren');
+            }
+        }
+        
+        function stopGPSTracking() {
+            if (gpsWatchId) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+            }
+            isGPSActive = false;
+            updateGPSStatus('GPS: Ikke tilkoblet', false);
+            
+            if (currentPositionMarker) {
+                currentPositionMarker.remove();
+                currentPositionMarker = null;
+            }
+        }
+        
+        function updatePosition(position) {
+            const lng = position.coords.longitude;
+            const lat = position.coords.latitude;
+            const accuracy = position.coords.accuracy;
+            
+            console.log(`GPS posisjon: ${lat}, ${lng} (nøyaktighet: ${accuracy}m)`);
+            
+            // Oppdater eller opprett posisjon marker
+            if (currentPositionMarker) {
+                currentPositionMarker.setLngLat([lng, lat]);
+            } else {
+                currentPositionMarker = new mapboxgl.Marker({ color: 'blue' })
+                    .setLngLat([lng, lat])
+                    .setPopup(new mapboxgl.Popup().setHTML(
+                        `<h4>Din posisjon</h4>
+                         <p>Koordinater: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+                         <p>Nøyaktighet: ${accuracy.toFixed(0)}m</p>`
+                    ))
+                    .addTo(map);
+            }
+            
+            // Oppdater start-punkt for navigasjon
+            directions.setOrigin([lng, lat]);
+            
+            updateGPSStatus(`GPS: Aktiv (±${accuracy.toFixed(0)}m)`, true);
+        }
+        
+        function handleGPSError(error) {
+            console.error('GPS feil:', error);
+            let message = 'GPS feil: ';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message += 'Tilgang nektet';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message += 'Posisjon ikke tilgjengelig';
+                    break;
+                case error.TIMEOUT:
+                    message += 'Timeout';
+                    break;
+                default:
+                    message += 'Ukjent feil';
+                    break;
+            }
+            updateGPSStatus(message, false);
+        }
+        
+        function updateGPSStatus(message, isActive) {
+            const statusElement = document.getElementById('gpsStatus');
+            statusElement.textContent = message;
+            statusElement.className = isActive ? 'gps-status gps-active' : 'gps-status gps-inactive';
+        }
+        
+        function centerOnPosition() {
+            if (currentPositionMarker) {
+                const lngLat = currentPositionMarker.getLngLat();
+                map.flyTo({ center: [lngLat.lng, lngLat.lat], zoom: 16 });
+            } else {
+                alert('Ingen GPS-posisjon tilgjengelig. Start GPS tracking først.');
+            }
+        }
+        
+        function navigateTo(lng, lat, name) {
+            directions.setDestination([lng, lat]);
+            console.log(`Navigerer til: ${name} (${lng}, ${lat})`);
+        }
+        
+        function clearRoute() {
+            directions.removeRoutes();
+            document.getElementById('routeInfo').style.display = 'none';
+        }
+        
+        // Event listeners for directions
+        directions.on('route', function(event) {
+            const route = event.route[0];
+            if (route) {
+                const distance = (route.distance / 1000).toFixed(1);
+                const duration = Math.round(route.duration / 60);
+                
+                document.getElementById('routeDistance').textContent = `Avstand: ${distance} km`;
+                document.getElementById('routeDuration').textContent = `Tid: ${duration} min`;
+                document.getElementById('routeInfo').style.display = 'block';
+                
+                console.log(`Rute beregnet: ${distance}km, ${duration}min`);
+            }
+        });
+        
+        directions.on('clear', function() {
+            document.getElementById('routeInfo').style.display = 'none';
+            console.log('Rute fjernet');
+        });
+        
+        // Klikk på kartet for å sette destinasjon
+        map.on('click', function(e) {
+            directions.setDestination([e.lngLat.lng, e.lngLat.lat]);
+            console.log(`Destinasjon satt til: ${e.lngLat.lng}, ${e.lngLat.lat}`);
+        });
+        
+        map.on('load', function() {
+            console.log('Navigasjonskart lastet!');
+        });
+    </script>
+</body>
+</html>

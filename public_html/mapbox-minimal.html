@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>MapBox Test Setup</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h3>MapBox Test</h3>
+        <button onclick="changeStyle('streets')">Streets</button>
+        <button onclick="changeStyle('satellite')">Satellite</button>
+        <button onclick="changeStyle('dark')">Dark</button>
+        <button onclick="addPin()">Add Pin</button>
+        <button onclick="clearPins()">Clear Pins</button>
+        <div>
+            <label>Zoom: </label>
+            <input type="range" id="zoomSlider" min="1" max="20" value="10" oninput="changeZoom(this.value)">
+            <span id="zoomValue">10</span>
+        </div>
+    </div>
+    
+    <div id='map'></div>
+    
+    <script>
+        // SETT INN DIN MAPBOX TOKEN HER
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYm9zc21hbjc1ODEiLCJhIjoiY2xmb3E5bHQ3MHVpYzN1bWhmaWoyN3h2OSJ9.mPV4SK4sSBApOHp6evb78A';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [10.7522, 59.9139], // Oslo sentrum
+            zoom: 10
+        });
+        
+        // Array for å holde alle pins
+        let pins = [];
+        
+        // Style options
+        const styles = {
+            streets: 'mapbox://styles/mapbox/streets-v11',
+            satellite: 'mapbox://styles/mapbox/satellite-v9',
+            dark: 'mapbox://styles/mapbox/dark-v10'
+        };
+        
+        // Funksjon for å endre kartets stil
+        function changeStyle(styleKey) {
+            map.setStyle(styles[styleKey]);
+        }
+        
+        // Funksjon for å endre zoom
+        function changeZoom(value) {
+            map.setZoom(value);
+            document.getElementById('zoomValue').innerText = value;
+        }
+        
+        // Funksjon for å legge til pin ved klikk
+        function addPin() {
+            const center = map.getCenter();
+            
+            // Legg til litt random offset for å se flere pins
+            const lng = center.lng + (Math.random() - 0.5) * 0.01;
+            const lat = center.lat + (Math.random() - 0.5) * 0.01;
+            
+            const marker = new mapboxgl.Marker()
+                .setLngLat([lng, lat])
+                .setPopup(new mapboxgl.Popup().setHTML(`<h4>Pin ${pins.length + 1}</h4><p>Koordinater: ${lng.toFixed(4)}, ${lat.toFixed(4)}</p>`))
+                .addTo(map);
+            
+            pins.push(marker);
+            console.log(`Pin lagt til: ${lng}, ${lat}`);
+        }
+        
+        // Funksjon for å fjerne alle pins
+        function clearPins() {
+            pins.forEach(pin => pin.remove());
+            pins = [];
+            console.log('Alle pins fjernet');
+        }
+        
+        // Event listeners
+        map.on('load', function() {
+            console.log('Kart lastet!');
+        });
+        
+        map.on('click', function(e) {
+            console.log(`Klikket på: ${e.lngLat.lng}, ${e.lngLat.lat}`);
+        });
+        
+        map.on('zoom', function() {
+            const zoom = Math.round(map.getZoom());
+            document.getElementById('zoomSlider').value = zoom;
+            document.getElementById('zoomValue').innerText = zoom;
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'p':
+                    addPin();
+                    break;
+                case 'c':
+                    clearPins();
+                    break;
+                case '1':
+                    changeStyle('streets');
+                    break;
+                case '2':
+                    changeStyle('satellite');
+                    break;
+                case '3':
+                    changeStyle('dark');
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
