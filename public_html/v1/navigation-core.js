@@ -68,15 +68,13 @@ class NavigationCore {
         // Add radar pins layer
         this.map.addLayer({
             id: 'radar-pins-layer',
-            type: 'symbol',
+            type: 'circle',
             source: 'radar-pins',
-            layout: {
-                'icon-image': 'police-15',
-                'icon-size': 2,
-                'icon-allow-overlap': true
-            },
             paint: {
-                'icon-color': '#ff0000'
+                'circle-radius': 8,
+                'circle-color': '#ff0000',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
             }
         });
         
