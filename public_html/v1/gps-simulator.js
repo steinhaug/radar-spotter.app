@@ -84,8 +84,15 @@ class GpsSimulator {
     }
     
     startSimulation() {
+        // Stopp ekte GPS hvis navigasjon er aktiv
+        if (window.navigationCore && window.navigationCore.gpsWatchId) {
+            navigator.geolocation.clearWatch(window.navigationCore.gpsWatchId);
+            window.navigationCore.gpsWatchId = null;
+        }
+
         if (this.isSimulating) return;
         
+        // Use loaded log or demo route
         const routeData = this.gpsLog.length > 0 ? this.gpsLog : this.demoRoute;
         
         if (routeData.length === 0) {
@@ -102,11 +109,12 @@ class GpsSimulator {
         this.updateSimulatorStatus(`Simulerer rute: ${routeData.length} punkter over ${Math.round(interval*routeData.length/60000)} min`);
         this.updateSimulatorButtons();
         
+        // Start playback
         this.simulationInterval = setInterval(() => {
             this.playNextGpsPoint(routeData);
         }, interval / this.playbackSpeed);
     }
-    
+
     stopSimulation() {
         if (!this.isSimulating) return;
         

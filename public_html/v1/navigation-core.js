@@ -155,7 +155,14 @@ class NavigationCore {
         this.updateStatus('nav-status', 'Aktiv');
         this.showNavigationOverlay(true);
         
-        // Start GPS tracking
+
+        // Sjekk om simulering er aktiv
+        if (window.gpsSimulator && window.gpsSimulator.isSimulating) {
+            this.updateStatus('gps-status', 'Bruker GPS-simulering');
+            return; // IKKE start ekte GPS
+        }
+        
+        // Start ekte GPS bare hvis simulering ikke kjører
         this.gpsWatchId = navigator.geolocation.watchPosition(
             (position) => this.handleGpsUpdate(position),
             (error) => this.handleGpsError(error),
