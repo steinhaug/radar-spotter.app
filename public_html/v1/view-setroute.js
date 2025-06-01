@@ -114,11 +114,17 @@ class ViewSetRoute {
         const style = button.dataset.style;
         const type = button.dataset.type;
         
+        // Store for route calculations
+        this.currentTransportMode = type;
+
         this.currentMapStyle = style;
         this.map.setStyle(style);
         
-        // Store for route calculations
-        this.currentTransportMode = type;
+        // Gjenopprett lag når stil er lastet
+        this.map.once('styledata', () => {
+            this.restoreMapLayers();
+        });
+
     }
     
     toggle3DTerrain() {
@@ -154,6 +160,11 @@ class ViewSetRoute {
             this.map.setStyle(this.currentMapStyle);
             btn.classList.remove('active');
         }
+        
+        // Gjenopprett lag når stil er lastet
+        this.map.once('styledata', () => {
+            this.restoreMapLayers();
+        });
     }
     
     toggleLabels() {
@@ -634,6 +645,27 @@ class ViewSetRoute {
         });
     }
     
+
+    // Ny metode for å gjenopprette lag
+    restoreMapLayers() {
+        // Be navigation core om å gjenopprette sine lag
+        if (this.nav.setupMapLayers) {
+            this.nav.setupMapLayers();
+        }
+        
+        // Gjenopprett eventuelle andre lag fra view-setroute
+        this.restoreRouteLayers();
+    }
+
+    restoreRouteLayers() {
+        // Gjenopprett rute hvis den eksisterer
+        if (this.currentRoute) {
+            this.displayRoute(this.currentRoute);
+        }
+    }
+
+
+
     // ==================== UTILITY FUNCTIONS ====================
     
     togglePanel(panelId) {
