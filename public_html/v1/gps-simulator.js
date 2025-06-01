@@ -86,7 +86,6 @@ class GpsSimulator {
     startSimulation() {
         if (this.isSimulating) return;
         
-        // Use loaded log or demo route
         const routeData = this.gpsLog.length > 0 ? this.gpsLog : this.demoRoute;
         
         if (routeData.length === 0) {
@@ -97,13 +96,15 @@ class GpsSimulator {
         this.isSimulating = true;
         this.currentLogIndex = 0;
         
-        this.updateSimulatorStatus(`Simulerer rute med ${routeData.length} punkter`);
+        // Bruk beregnet intervall hvis tilgjengelig
+        const interval = this.calculatedInterval || this.defaultInterval;
+        
+        this.updateSimulatorStatus(`Simulerer rute: ${routeData.length} punkter over ${Math.round(interval*routeData.length/60000)} min`);
         this.updateSimulatorButtons();
         
-        // Start playback
         this.simulationInterval = setInterval(() => {
             this.playNextGpsPoint(routeData);
-        }, this.defaultInterval / this.playbackSpeed);
+        }, interval / this.playbackSpeed);
     }
     
     stopSimulation() {
@@ -348,12 +349,23 @@ class GpsSimulator {
         return null;
     }
 
-    // Legg til denne metoden i GpsSimulator-klassen:
-    loadGeneratedLog(gpsLog) {
+
+    loadGeneratedLog(gpsLog, routeDuration = null) {
         this.gpsLog = gpsLog;
-        this.updateSimulatorStatus(`Rute-logg lastet: ${gpsLog.length} punkter`);
-        console.log('Generated GPS log loaded:', gpsLog.length, 'points');
+        
+        // Beregn realistisk intervall hvis vi har rutetid
+        if (routeDuration && gpsLog.length > 0) {
+            this.calculatedInterval = (routeDuration * 1000) / gpsLog.length;
+            console.log(`Route duration: ${routeDuration}s, Points: ${gpsLog.length}, Interval: ${this.calculatedInterval.toFixed(1)}ms`);
+        } else {
+            this.calculatedInterval = this.defaultInterval;
+        }
+        
+        this.updateSimulatorStatus(`Rute-logg lastet: ${gpsLog.length} punkter (${Math.round(this.calculatedInterval/1000*gpsLog.length/60)} min)`);
     }
+
+
+
 
 }
 

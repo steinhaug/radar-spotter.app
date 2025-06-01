@@ -451,13 +451,13 @@ class NavigationCore {
 
     generateGpsFromRoute() {
         if (window.viewSetRoute) {
-            const gpsLog = window.viewSetRoute.generateGpsLogFromRoute();
-            if (gpsLog && window.gpsSimulator) {
-                window.gpsSimulator.loadGeneratedLog(gpsLog);
-                this.updateStatus('gps-status', 'GPS-logg generert fra rute');
+            const routeData = window.viewSetRoute.generateGpsLogFromRoute();
+            if (routeData && window.gpsSimulator) {
+                window.gpsSimulator.loadGeneratedLog(routeData.gpsLog, routeData.duration);
+                this.updateStatus('gps-status', 'GPS-logg generert fra rute med realistisk timing');
             }
         }
-    }    
+    }
 
     updateStatus(elementId, text) {
         const element = document.getElementById(elementId);

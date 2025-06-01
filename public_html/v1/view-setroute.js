@@ -452,8 +452,9 @@ class ViewSetRoute {
             const avoidHighways = document.getElementById('avoid-highways').checked;
             
             let url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/` +
-                     `${startCoords.lng},${startCoords.lat};${destCoords.lng},${destCoords.lat}?` +
-                     `geometries=geojson&steps=true&access_token=${window.APP_CONFIG.mapboxToken}`;
+                    `${startCoords.lng},${startCoords.lat};${destCoords.lng},${destCoords.lat}?` +
+                    `geometries=geojson&steps=true&overview=full&` +
+                    `access_token=${window.APP_CONFIG.mapboxToken}`;
             
             if (avoidTolls) url += '&exclude=toll';
             if (avoidHighways) url += '&exclude=motorway';
@@ -669,7 +670,9 @@ class ViewSetRoute {
             return null;
         }
         
+
         const coordinates = this.currentRoute.geometry.coordinates;
+        const routeDuration = this.currentRoute.duration;
         const steps = this.currentRoute.legs[0].steps;
         
         const gpsLog = coordinates.map((coord, index) => {
@@ -702,7 +705,7 @@ class ViewSetRoute {
             };
         });
         
-        return gpsLog;
+        return { gpsLog, duration: routeDuration };
     }
     
     // ==================== PANEL MANAGEMENT ====================
