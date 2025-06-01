@@ -589,4 +589,20 @@
         grid-column: 1;
     }
 }
+
+/* Drag functionality */
+.floating-panel.dragging {
+    opacity: 0.8;
+    z-index: 2000;
+}
+
+.panel-header {
+    cursor: move;
+    user-select: none;
+}
+
+.panel-header:active {
+    cursor: grabbing;
+}
+
 </style>

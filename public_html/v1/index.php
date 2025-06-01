@@ -9,7 +9,7 @@ include_once 'config.php'; // Contains API tokens and configuration
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radar Navigation System</title>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?<?=time()?>">
 </head>
 <body>
     <div id="app-container">
@@ -111,8 +111,8 @@ include_once 'config.php'; // Contains API tokens and configuration
 
     <!-- Scripts -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
-    <script src="view-setroute.js"></script>
-    <script src="navigation-core.js"></script>
-    <script src="gps-simulator.js"></script>
+    <script src="view-setroute.js?<?=time()?>"></script>
+    <script src="navigation-core.js?<?=time()?>"></script>
+    <script src="gps-simulator.js?<?=time()?>"></script>
 </body>
 </html>

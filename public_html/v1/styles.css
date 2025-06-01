@@ -286,3 +286,31 @@ body {
         font-size: 24px;
     }
 }
+
+
+
+/* I display.php og set_route.php, ERSTATT den eksisterende posisjonering: */
+#display-panel {
+    top: 20px;
+    left: 20px;
+}
+
+#route-panel {
+    top: 20px;
+    left: 340px; /* Display panel width (320px) + gap (20px) */
+}
+
+/* Z-index system for panels */
+.floating-panel {
+    z-index: 1000; /* Default z-index */
+    transition: z-index 0s; /* Instant z-index change */
+}
+
+.floating-panel.active {
+    z-index: 1100; /* Active panel on top */
+}
+
+.floating-panel.collapsed {
+    z-index: 999; /* Collapsed panels below default */
+}
+

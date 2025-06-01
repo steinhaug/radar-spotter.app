@@ -27,6 +27,10 @@ class ViewSetRoute {
         this.bindRoutePanelEvents();
         this.setupMapEventListeners();
         this.startCoordinateUpdates();
+        this.initializeDragFunctionality();
+        // Start with both panels collapsed
+        document.getElementById('display-panel').classList.add('collapsed');
+        document.getElementById('route-panel').classList.add('collapsed');
     }
     
     // ==================== DISPLAY PANEL FUNCTIONALITY ====================
@@ -695,6 +699,36 @@ class ViewSetRoute {
         return gpsLog;
     }
     
+    // ==================== PANEL MANAGEMENT ====================
+
+    activatePanel(panelId) {
+        // Remove active class from all panels
+        document.querySelectorAll('.floating-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        
+        // Add active class to clicked panel
+        const activePanel = document.getElementById(panelId);
+        if (activePanel && !activePanel.classList.contains('collapsed')) {
+            activePanel.classList.add('active');
+        }
+    }
+
+    togglePanel(panelId) {
+        const panel = document.getElementById(panelId);
+        const isCollapsing = !panel.classList.contains('collapsed');
+        
+        panel.classList.toggle('collapsed');
+        
+        if (!isCollapsing) {
+            // Panel is being opened - make it active
+            this.activatePanel(panelId);
+        } else {
+            // Panel is being collapsed - remove active state
+            panel.classList.remove('active');
+        }
+    }
+
     estimateSpeedFromStep(step) {
         const maneuver = step.maneuver.type;
         const roadClass = step.intersections?.[0]?.classes || [];
@@ -720,6 +754,57 @@ class ViewSetRoute {
         let heading = Math.atan2(x, y) * 180 / Math.PI;
         return (heading + 360) % 360;
     }
+
+
+
+    // ==================== DRAG FUNCTIONALITY ====================
+
+    initializeDragFunctionality() {
+        this.makePanelDraggable('display-panel');
+        this.makePanelDraggable('route-panel');
+    }
+
+    makePanelDraggable(panelId) {
+        const panel = document.getElementById(panelId);
+        const header = panel.querySelector('.panel-header');
+        
+        let isDragging = false;
+        let startPos = { x: 0, y: 0 };
+        let panelStart = { x: 0, y: 0 };
+        
+        header.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            panel.classList.add('dragging');
+            
+            // Lagre start-posisjoner
+            startPos.x = e.clientX;
+            startPos.y = e.clientY;
+            panelStart.x = parseInt(panel.style.left || getComputedStyle(panel).left);
+            panelStart.y = parseInt(panel.style.top || getComputedStyle(panel).top);
+            
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - startPos.x;
+            const deltaY = e.clientY - startPos.y;
+            
+            const newX = panelStart.x + deltaX;
+            const newY = panelStart.y + deltaY;
+            
+            panel.style.left = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, newX)) + 'px';
+            panel.style.top = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, newY)) + 'px';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            panel.classList.remove('dragging');
+        });
+    }
+
+
 }
 
 // Initialize when DOM is loaded and navigation core is ready
