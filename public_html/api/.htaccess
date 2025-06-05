@@ -1,0 +1,31 @@
+
+# /api/.htaccess - API URL Routing
+
+RewriteEngine On
+RewriteBase /api/
+
+# CORS Headers for all requests
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+
+# Handle preflight OPTIONS requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ options.php [QSA,L]
+
+# PIN Management Routes
+RewriteRule ^pins/all/?$ ./pins/all.php [QSA,L]
+RewriteRule ^pins/changes/?$ ./pins/changes.php [QSA,L]
+RewriteRule ^pins/([a-zA-Z0-9-]+)/details$ ./pins/details.php?id=$1 [QSA,L]
+
+# Route Analysis
+RewriteRule ^route/scan/?$ ./route/scan.php [QSA,L]
+
+# Reporting & Analytics
+RewriteRule ^reports/pin-alert/?$ ./reports/pin-alert.php [QSA,L]
+RewriteRule ^reports/route-created/?$ ./reports/route-created.php [QSA,L]
+
+# Catch-all for undefined routes (exclude existing PHP files)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ error.php?route=$1 [QSA,L]
