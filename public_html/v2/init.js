@@ -1,6 +1,6 @@
-// init.js - Initialize and coordinate all system components
+// init.js - Initialize and integrate all system components
 
-class RadarNavigationApp {
+class RadarNavigationSystem {
     constructor() {
         // Core components
         this.locationProvider = null;
@@ -9,353 +9,375 @@ class RadarNavigationApp {
         this.proximityScanner = null;
         this.reportingEngine = null;
         
-        // State management
+        // System state
         this.isInitialized = false;
-        this.isNavigationActive = false;
-        this.currentRoute = null;
+        this.initializationPromise = null;
+        this.currentMode = 'idle'; // 'idle', 'navigation', 'simulation'
         
-        // UI elements cache
-        this.ui = {
-            statusElements: new Map(),
-            controls: new Map()
+        // Configuration from PHP
+        this.config = window.APP_CONFIG || {
+            mapboxToken: null,
+            defaultCenter: [8.0059, 58.1467],
+            defaultZoom: 12,
+            apiBaseUrl: '/api'
         };
         
-        // Configuration
-        this.config = {
-            mapContainer: 'map',
-            defaultProximityRadius: 2000,
-            defaultScanThreshold: 100,
-            enableDebugMode: false
-        };
+        // Event bindings
+        this.eventBindings = [];
         
-        this.init();
+        // Auto-initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initialize());
+        } else {
+            this.initialize();
+        }
     }
     
-    // ==================== INITIALIZATION ====================
+    // ==================== SYSTEM INITIALIZATION ====================
     
-    async init() {
+    /**
+     * Initialize the complete radar navigation system
+     * @returns {Promise} Initialization promise
+     */
+    async initialize() {
+        if (this.initializationPromise) {
+            return this.initializationPromise;
+        }
+        
+        this.initializationPromise = this.performInitialization();
+        return this.initializationPromise;
+    }
+    
+    /**
+     * Perform the actual initialization sequence
+     */
+    async performInitialization() {
         try {
-            console.log('🚀 Initializing Radar Navigation System...');
+            console.log('🚀 Starting Radar Navigation System initialization...');
             
-            // Check for required configuration
+            // Step 1: Validate configuration
             this.validateConfiguration();
             
-            // Initialize core components in order
+            // Step 2: Initialize core components in order
             await this.initializeComponents();
             
-            // Set up integrations between components
-            this.setupIntegrations();
-            
-            // Bind UI event handlers
-            this.bindUIEvents();
-            
-            // Load initial data
+            // Step 3: Load initial data
             await this.loadInitialData();
             
-            // System ready
-            this.isInitialized = true;
-            this.updateStatus('system-status', 'System ready');
+            // Step 4: Set up event integrations
+            this.setupEventIntegrations();
             
+            // Step 5: Bind UI events
+            this.bindUIEvents();
+            
+            // Step 6: Start initial services
+            this.startInitialServices();
+            
+            this.isInitialized = true;
             console.log('✅ Radar Navigation System initialized successfully');
             
-            // Emit ready event for external integrations
-            window.dispatchEvent(new CustomEvent('radarSystemReady', {
-                detail: { app: this }
-            }));
+            // Emit system ready event
+            this.emitSystemEvent('systemReady', {
+                timestamp: Date.now(),
+                components: this.getComponentStatus()
+            });
             
         } catch (error) {
-            console.error('❌ Failed to initialize system:', error);
-            this.updateStatus('system-status', 'Initialization failed');
-            this.showError('System initialization failed. Please reload the page.');
+            console.error('❌ System initialization failed:', error);
+            this.emitSystemEvent('systemError', { error });
+            throw error;
         }
     }
     
+    /**
+     * Validate system configuration
+     */
     validateConfiguration() {
-        if (!window.APP_CONFIG) {
-            throw new Error('APP_CONFIG not found. Please check config.php');
+        if (!this.config.mapboxToken) {
+            throw new Error('MapBox access token is required');
         }
         
-        if (!window.APP_CONFIG.mapboxToken) {
-            throw new Error('Mapbox token not configured');
+        if (!this.config.defaultCenter || this.config.defaultCenter.length !== 2) {
+            throw new Error('Invalid default center coordinates');
         }
         
-        if (!document.getElementById(this.config.mapContainer)) {
-            throw new Error(`Map container '${this.config.mapContainer}' not found`);
-        }
+        console.log('✓ Configuration validated');
     }
     
+    /**
+     * Initialize core components in dependency order
+     */
     async initializeComponents() {
-        // 1. Initialize reporting engine first (no dependencies)
-        console.log('📊 Initializing ReportingEngine...');
-        this.reportingEngine = new ReportingEngine();
+        console.log('🔧 Initializing core components...');
         
-        // 2. Initialize location provider
-        console.log('📍 Initializing LocationProvider...');
+        // 1. LocationProvider (no dependencies)
         this.locationProvider = new LocationProvider();
+        console.log('✓ LocationProvider initialized');
         
-        // 3. Initialize map core
-        console.log('🗺️ Initializing MapCore...');
-        this.mapCore = new MapCore(this.config.mapContainer, {
-            accessToken: window.APP_CONFIG.mapboxToken,
-            center: window.APP_CONFIG.defaultCenter,
-            zoom: window.APP_CONFIG.defaultZoom
+        // 2. ReportingEngine (no dependencies)
+        this.reportingEngine = new ReportingEngine();
+        console.log('✓ ReportingEngine initialized');
+        
+        // 3. MapCore (requires config)
+        this.mapCore = new MapCore('map', {
+            accessToken: this.config.mapboxToken,
+            center: this.config.defaultCenter,
+            zoom: this.config.defaultZoom
         });
         
         // Wait for map to be ready
         await this.waitForMapReady();
+        console.log('✓ MapCore initialized');
         
-        // 4. Initialize pin manager (depends on map core)
-        console.log('📌 Initializing PinManager...');
+        // 4. PinManager (requires MapCore)
         this.pinManager = new PinManager(this.mapCore);
+        console.log('✓ PinManager initialized');
         
-        // 5. Initialize proximity scanner (depends on pin manager and location provider)
-        console.log('🔍 Initializing ProximityScanner...');
+        // 5. ProximityScanner (requires PinManager, LocationProvider, ReportingEngine)
         this.proximityScanner = new ProximityScanner(
             this.pinManager,
             this.locationProvider,
             this.reportingEngine
         );
+        console.log('✓ ProximityScanner initialized');
     }
     
+    /**
+     * Wait for map to be ready
+     */
     waitForMapReady() {
         return new Promise((resolve) => {
             if (this.mapCore.isInitialized) {
                 resolve();
             } else {
-                this.mapCore.addEventListener('mapReady', () => resolve(), { once: true });
+                this.mapCore.addEventListener('mapReady', resolve, { once: true });
             }
         });
     }
     
-    // ==================== COMPONENT INTEGRATION ====================
-    
-    setupIntegrations() {
-        console.log('🔗 Setting up component integrations...');
+    /**
+     * Load initial data from backend
+     */
+    async loadInitialData() {
+        console.log('📡 Loading initial data...');
         
-        // Location provider events
+        try {
+            // Load all pins from backend
+            const response = await fetch(`${this.config.apiBaseUrl}/pins/all`);
+            if (response.ok) {
+                const data = await response.json();
+                this.pinManager.loadPins(data.pins || []);
+                console.log(`✓ Loaded ${data.pins?.length || 0} pins from backend`);
+                
+                // Store timestamp for delta updates
+                this.lastPinUpdate = data.timestamp;
+            } else {
+                console.warn('Failed to load pins from backend, using demo data');
+                this.loadDemoPins();
+            }
+            
+        } catch (error) {
+            console.warn('Backend not available, using demo data:', error);
+            this.loadDemoPins();
+        }
+    }
+    
+    /**
+     * Load demo pins for development/testing
+     */
+    loadDemoPins() {
+        const demoPins = [
+            {
+                id: 'demo_1',
+                lng: 8.0059,
+                lat: 58.1467,
+                type: 'radar',
+                data: { name: 'E18 Sør', speed_limit: 80 }
+            },
+            {
+                id: 'demo_2',
+                lng: 7.9956,
+                lat: 58.1599,
+                type: 'radar',
+                data: { name: 'Vågsbygd', speed_limit: 60 }
+            },
+            {
+                id: 'demo_3',
+                lng: 8.0194,
+                lat: 58.1525,
+                type: 'police',
+                data: { name: 'Sentrum kontroll' }
+            }
+        ];
+        
+        this.pinManager.loadPins(demoPins);
+        console.log(`✓ Loaded ${demoPins.length} demo pins`);
+    }
+    
+    // ==================== EVENT INTEGRATIONS ====================
+    
+    /**
+     * Set up event integrations between components
+     */
+    setupEventIntegrations() {
+        console.log('🔗 Setting up event integrations...');
+        
+        // LocationProvider -> UI updates
         this.locationProvider.onPositionUpdate((position) => {
-            this.handlePositionUpdate(position);
+            this.updateLocationDisplay(position);
         });
         
         this.locationProvider.onStatusChange((status) => {
-            this.handleLocationStatusChange(status);
+            this.updateGPSStatus(status);
         });
         
-        this.locationProvider.onError((error) => {
-            this.handleLocationError(error);
-        });
-        
-        // Map events
-        this.mapCore.addEventListener('mapMove', (e) => {
-            this.handleMapMove(e.detail);
-        });
-        
-        this.mapCore.addEventListener('styleChanged', () => {
-            // Restore pin layers after style change
-            this.pinManager.restoreLayers();
-        });
-        
-        // Proximity scanner events
+        // ProximityScanner -> Alert system
         this.proximityScanner.onPinAlert((alert) => {
-            this.handlePinAlert(alert);
+            this.showPinAlert(alert);
         });
         
         this.proximityScanner.onRoutePinAlert((alert) => {
-            this.handleRoutePinAlert(alert);
+            this.showRoutePinAlert(alert);
         });
         
-        this.proximityScanner.onProximityResults((results) => {
-            this.handleProximityResults(results);
-        });
-        
-        // Reporting engine events
+        // ReportingEngine -> Statistics
         this.reportingEngine.onPinReported((report) => {
-            console.log('📊 Pin reported:', report.pinId);
+            this.updateReportStatistics();
         });
         
-        this.reportingEngine.onDuplicateBlocked((data) => {
-            console.log('🚫 Duplicate report blocked:', data.pinId);
+        this.reportingEngine.onDuplicateBlocked((event) => {
+            console.log('Duplicate report blocked:', event);
         });
         
-        // Add analytics hooks
-        this.setupAnalyticsHooks();
-    }
-    
-    setupAnalyticsHooks() {
-        // Pin alert analytics
-        this.reportingEngine.addHook('pinReported', (report) => {
-            if (window.gtag) {
-                gtag('event', 'pin_alert', {
-                    pin_type: report.metadata.pinType,
-                    context: report.context,
-                    distance: report.metadata.distance
-                });
-            }
+        // MapCore -> Style preservation
+        this.mapCore.addEventListener('styleChanging', () => {
+            // Pins will be automatically restored by MapCore's layer restoration
         });
         
-        // Route creation analytics
-        this.reportingEngine.addHook('routeReported', (report) => {
-            if (window.gtag) {
-                gtag('event', 'route_created', {
-                    distance: report.routeData.distance,
-                    profile: report.routeData.profile
-                });
-            }
-        });
+        console.log('✓ Event integrations configured');
     }
     
-    // ==================== EVENT HANDLERS ====================
+    // ==================== UI EVENT BINDINGS ====================
     
-    handlePositionUpdate(position) {
-        this.updateStatus('gps-lat', position.lat.toFixed(6));
-        this.updateStatus('gps-lng', position.lng.toFixed(6));
-        this.updateStatus('gps-accuracy', Math.round(position.accuracy) + 'm');
-        
-        if (this.isNavigationActive) {
-            this.updateNavigationDisplay(position);
-        }
-    }
-    
-    handleLocationStatusChange(status) {
-        this.updateStatus('gps-status', status.message);
-        
-        if (status.active && status.mode === 'simulation') {
-            this.updateStatus('nav-mode', 'Simulering');
-        } else if (status.active) {
-            this.updateStatus('nav-mode', 'GPS');
-        } else {
-            this.updateStatus('nav-mode', 'Inaktiv');
-        }
-    }
-    
-    handleLocationError(error) {
-        this.updateStatus('gps-status', error.message);
-        console.error('Location error:', error);
-    }
-    
-    handleMapMove(mapState) {
-        // Update map center coordinates in UI
-        this.updateStatus('center-lat', mapState.center.lat.toFixed(6));
-        this.updateStatus('center-lng', mapState.center.lng.toFixed(6));
-        this.updateStatus('current-zoom', mapState.zoom.toFixed(1));
-        this.updateStatus('current-bearing', Math.round(mapState.bearing) + '°');
-        this.updateStatus('current-pitch', Math.round(mapState.pitch) + '°');
-    }
-    
-    handlePinAlert(alert) {
-        console.log('🚨 PIN Alert:', alert);
-        
-        // Show visual warning
-        this.showPinWarning(alert);
-        
-        // Play sound if enabled
-        this.playAlertSound();
-        
-        // Update nearest pin status
-        this.updateStatus('nearest-pin', alert.pin.data.name || `PIN ${alert.pin.id}`);
-        this.updateStatus('nearest-distance', Math.round(alert.distance) + 'm');
-    }
-    
-    handleRoutePinAlert(alert) {
-        console.log('🛣️ Route PIN Alert:', alert);
-        
-        // Add to route pins list or update UI
-        this.updateRoutePinsList(alert);
-    }
-    
-    handleProximityResults(results) {
-        // Update proximity statistics
-        this.updateStatus('pins-in-range', results.pinsFound.length);
-        
-        if (results.pinsFound.length > 0) {
-            const closest = results.pinsFound[0]; // Already sorted by distance
-            this.updateStatus('nearest-pin', closest.data.name || `PIN ${closest.id}`);
-            this.updateStatus('nearest-distance', Math.round(closest.distance) + 'm');
-        } else {
-            this.updateStatus('nearest-pin', 'Ingen');
-            this.updateStatus('nearest-distance', '-');
-        }
-    }
-    
-    // ==================== UI EVENT BINDING ====================
-    
+    /**
+     * Bind UI control events
+     */
     bindUIEvents() {
+        console.log('🎮 Binding UI events...');
+        
         // Navigation controls
-        this.bindButton('start-navigation', () => this.startNavigation());
-        this.bindButton('stop-navigation', () => this.stopNavigation());
-        this.bindButton('center-map', () => this.centerOnPosition());
+        this.bindEvent('start-navigation', 'click', () => this.startNavigation());
+        this.bindEvent('stop-navigation', 'click', () => this.stopNavigation());
+        this.bindEvent('center-map', 'click', () => this.centerOnPosition());
         
         // GPS simulation controls
-        this.bindButton('start-simulation', () => this.startSimulation());
-        this.bindButton('stop-simulation', () => this.stopSimulation());
-        this.bindButton('load-gps-log', () => this.loadGpsLog());
+        this.bindEvent('start-simulation', 'click', () => this.startSimulation());
+        this.bindEvent('stop-simulation', 'click', () => this.stopSimulation());
+        this.bindEvent('load-gps-log', 'click', () => this.loadGPSLog());
+        this.bindEvent('generate-from-route', 'click', () => this.generateFromRoute());
         
         // Pin controls
-        this.bindButton('toggle-pins', () => this.togglePinsVisibility());
-        this.bindButton('add-pin-mode', () => this.toggleAddPinMode());
+        this.bindEvent('toggle-pins', 'click', () => this.togglePins());
+        this.bindEvent('add-pin-mode', 'click', () => this.toggleAddPinMode());
         
-        // Map style controls (if available)
-        this.bindMapStyleControls();
+        // File upload
+        this.bindEvent('gps-log-upload', 'change', (e) => this.handleFileUpload(e));
         
-        // File input for GPS logs
-        const fileInput = document.getElementById('gps-log-upload');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => this.handleGpsLogUpload(e));
+        console.log('✓ UI events bound');
+    }
+    
+    /**
+     * Helper to bind event with tracking
+     */
+    bindEvent(elementId, eventType, handler) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.addEventListener(eventType, handler);
+            this.eventBindings.push({ element, eventType, handler });
+        } else {
+            console.warn(`Element not found: ${elementId}`);
         }
     }
     
-    bindButton(buttonId, handler) {
-        const button = document.getElementById(buttonId);
-        if (button) {
-            button.addEventListener('click', handler);
-            this.ui.controls.set(buttonId, button);
-        }
-    }
+    // ==================== CORE FUNCTIONALITY ====================
     
-    bindMapStyleControls() {
-        // Bind map style buttons if they exist
-        const styleButtons = document.querySelectorAll('[data-map-style]');
-        styleButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const style = button.dataset.mapStyle;
-                this.changeMapStyle(style);
+    /**
+     * Start navigation mode
+     */
+    async startNavigation() {
+        try {
+            this.currentMode = 'navigation';
+            
+            // Start location tracking
+            this.locationProvider.start('real');
+            
+            // Start proximity scanning
+            this.proximityScanner.startProximityScanning({
+                proximityRadius: 2000,
+                scanThreshold: 100
             });
-        });
-    }
-    
-    // ==================== NAVIGATION CONTROL ====================
-    
-    startNavigation() {
-        if (!this.isInitialized) {
-            this.showError('System not ready');
-            return;
+            
+            this.updateUIState();
+            this.updateStatus('gps-status', 'Starting GPS...');
+            
+            console.log('🧭 Navigation started');
+            
+        } catch (error) {
+            console.error('Failed to start navigation:', error);
+            this.updateStatus('gps-status', 'Navigation failed');
         }
-        
-        this.isNavigationActive = true;
-        this.locationProvider.start('real');
-        this.proximityScanner.startProximityScanning({
-            radius: this.config.defaultProximityRadius,
-            threshold: this.config.defaultScanThreshold
-        });
-        
-        this.updateStatus('nav-status', 'Aktiv');
-        this.updateNavigationButtons();
-        
-        console.log('🧭 Navigation started');
     }
     
+    /**
+     * Stop navigation mode
+     */
     stopNavigation() {
-        this.isNavigationActive = false;
+        this.currentMode = 'idle';
+        
+        // Stop location tracking
         this.locationProvider.stop();
+        
+        // Stop proximity scanning
         this.proximityScanner.stopProximityScanning();
         
-        this.updateStatus('nav-status', 'Inaktiv');
-        this.updateStatus('gps-status', 'Frakoblet');
-        this.updateNavigationButtons();
+        this.updateUIState();
+        this.updateStatus('gps-status', 'GPS stopped');
         
         console.log('⏹️ Navigation stopped');
     }
     
+    /**
+     * Start GPS simulation
+     */
+    startSimulation() {
+        this.currentMode = 'simulation';
+        
+        // Start location provider in simulation mode
+        this.locationProvider.start('simulation');
+        
+        // Start proximity scanning
+        this.proximityScanner.startProximityScanning();
+        
+        this.updateUIState();
+        console.log('🎬 Simulation started');
+    }
+    
+    /**
+     * Stop GPS simulation
+     */
+    stopSimulation() {
+        this.currentMode = 'idle';
+        
+        this.locationProvider.stop();
+        this.proximityScanner.stopProximityScanning();
+        
+        this.updateUIState();
+        console.log('⏹️ Simulation stopped');
+    }
+    
+    /**
+     * Center map on current position
+     */
     centerOnPosition() {
         const position = this.locationProvider.getCurrentPosition();
         if (position) {
@@ -364,256 +386,294 @@ class RadarNavigationApp {
                 zoom: 15
             });
         } else {
-            this.showError('No GPS position available');
+            console.warn('No current position available');
         }
     }
     
-    // ==================== SIMULATION CONTROL ====================
-    
-    startSimulation() {
-        if (!this.isInitialized) {
-            this.showError('System not ready');
-            return;
-        }
-        
-        // Stop real GPS if running
-        if (this.locationProvider.mode === 'real') {
-            this.locationProvider.stop();
-        }
-        
-        this.isNavigationActive = true;
-        this.locationProvider.start('simulation');
-        this.proximityScanner.startProximityScanning();
-        
-        this.updateStatus('nav-status', 'Simulering');
-        console.log('🎮 Simulation started');
+    /**
+     * Toggle pins visibility
+     */
+    togglePins() {
+        this.pinManager.toggleVisibility();
     }
     
-    stopSimulation() {
-        this.locationProvider.stop();
-        this.proximityScanner.stopProximityScanning();
-        this.isNavigationActive = false;
-        
-        this.updateStatus('nav-status', 'Inaktiv');
-        console.log('⏹️ Simulation stopped');
+    /**
+     * Toggle add pin mode
+     */
+    toggleAddPinMode() {
+        // This would integrate with a UI pin-adding system
+        console.log('Add pin mode toggled');
     }
     
-    loadGpsLog() {
-        const fileInput = document.getElementById('gps-log-upload');
-        if (fileInput) {
-            fileInput.click();
-        }
+    // ==================== FILE HANDLING ====================
+    
+    /**
+     * Load GPS log file
+     */
+    loadGPSLog() {
+        document.getElementById('gps-log-upload').click();
     }
     
-    handleGpsLogUpload(event) {
+    /**
+     * Handle GPS log file upload
+     */
+    handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
         
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const gpsLog = this.parseGpsLog(e.target.result, file.name);
-                this.locationProvider.loadSimulationData(gpsLog);
-                this.updateStatus('gps-status', `GPS logg lastet: ${gpsLog.length} punkter`);
+                this.parseGPSLog(e.target.result, file.name);
             } catch (error) {
-                console.error('Failed to load GPS log:', error);
-                this.showError('Failed to load GPS log');
+                console.error('Failed to parse GPS log:', error);
+                this.updateStatus('gps-status', 'GPS log parsing failed');
             }
         };
         reader.readAsText(file);
     }
     
-    parseGpsLog(content, fileName) {
-        const extension = fileName.split('.').pop().toLowerCase();
-        
-        switch (extension) {
-            case 'json':
-                return JSON.parse(content);
-            case 'gpx':
-                return this.parseGpxContent(content);
-            default:
-                throw new Error(`Unsupported file format: ${extension}`);
-        }
-    }
-    
-    parseGpxContent(content) {
-        // Basic GPX parsing - could be enhanced
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(content, 'text/xml');
-        const trackPoints = xmlDoc.getElementsByTagName('trkpt');
-        
-        const gpsLog = [];
-        for (let i = 0; i < trackPoints.length; i++) {
-            const point = trackPoints[i];
-            gpsLog.push({
-                lat: parseFloat(point.getAttribute('lat')),
-                lng: parseFloat(point.getAttribute('lon')),
-                timestamp: Date.now() + (i * 2000), // 2 second intervals
-                accuracy: 5,
-                speed: 50 // Default speed
-            });
-        }
-        
-        return gpsLog;
-    }
-    
-    // ==================== PIN MANAGEMENT ====================
-    
-    togglePinsVisibility() {
-        this.pinManager.toggleVisibility();
-        const button = this.ui.controls.get('toggle-pins');
-        if (button) {
-            button.textContent = this.pinManager.isVisible ? 'Skjul PINs' : 'Vis PINs';
-        }
-    }
-    
-    toggleAddPinMode() {
-        // Toggle add pin mode on map click
-        // Implementation would depend on how you want to add pins
-        console.log('Add pin mode toggled');
-    }
-    
-    // ==================== DATA LOADING ====================
-    
-    async loadInitialData() {
+    /**
+     * Parse GPS log and load into simulation
+     */
+    parseGPSLog(content, fileName) {
+        // Simple JSON format support for now
         try {
-            console.log('📥 Loading initial data...');
-            
-            // Load all pins from backend
-            const response = await fetch('/api/pins/all');
-            if (response.ok) {
-                const data = await response.json();
-                this.pinManager.loadPins(data.pins);
-                this.updateStatus('pins-loaded', data.pins.length);
-                console.log(`✅ Loaded ${data.pins.length} pins`);
-            }
-            
+            const gpsData = JSON.parse(content);
+            this.locationProvider.loadSimulationData(gpsData);
+            this.updateStatus('gps-status', `GPS log loaded: ${fileName}`);
         } catch (error) {
-            console.error('Failed to load initial data:', error);
-            // Continue anyway - app can work without backend data
+            console.error('GPS log must be in JSON format:', error);
+            this.updateStatus('gps-status', 'Invalid GPS log format');
         }
     }
     
-    // ==================== UI HELPERS ====================
+    /**
+     * Generate GPS log from current route (placeholder)
+     */
+    generateFromRoute() {
+        // This would integrate with route planning system
+        console.log('Generate from route - feature not yet implemented');
+        this.updateStatus('gps-status', 'Route generation not implemented');
+    }
     
-    updateStatus(elementId, value) {
+    // ==================== UI UPDATES ====================
+    
+    /**
+     * Update location display in UI
+     */
+    updateLocationDisplay(position) {
+        // Update coordinate displays if they exist
+        const elements = {
+            'gps-lat': position.lat.toFixed(6),
+            'gps-lng': position.lng.toFixed(6),
+            'gps-accuracy': Math.round(position.accuracy || 0) + 'm'
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+    }
+    
+    /**
+     * Update GPS status display
+     */
+    updateGPSStatus(status) {
+        this.updateStatus('gps-status', status.message);
+        
+        // Update navigation status
+        if (status.active) {
+            this.updateStatus('nav-status', this.currentMode === 'simulation' ? 'Simulation' : 'Active');
+        } else {
+            this.updateStatus('nav-status', 'Inactive');
+        }
+    }
+    
+    /**
+     * Update UI state based on current mode
+     */
+    updateUIState() {
+        const buttons = {
+            'start-navigation': this.currentMode === 'idle',
+            'stop-navigation': this.currentMode === 'navigation',
+            'start-simulation': this.currentMode === 'idle',
+            'stop-simulation': this.currentMode === 'simulation'
+        };
+        
+        Object.entries(buttons).forEach(([id, enabled]) => {
+            const element = document.getElementById(id);
+            if (element) element.disabled = !enabled;
+        });
+    }
+    
+    /**
+     * Update status display
+     */
+    updateStatus(elementId, text) {
         const element = document.getElementById(elementId);
         if (element) {
-            if (element.tagName === 'INPUT') {
-                element.value = value;
-            } else {
-                element.textContent = value;
+            element.textContent = text;
+        }
+    }
+    
+    /**
+     * Update report statistics display
+     */
+    updateReportStatistics() {
+        const stats = this.reportingEngine.getStatistics();
+        // Update stats display if elements exist
+        console.log('Report statistics:', stats);
+    }
+    
+    // ==================== ALERT SYSTEM ====================
+    
+    /**
+     * Show pin proximity alert
+     */
+    showPinAlert(alert) {
+        console.log('📍 Pin alert:', alert);
+        
+        // Show warning overlay if it exists
+        const warningElement = document.getElementById('radar-warning');
+        if (warningElement) {
+            const distanceElement = document.getElementById('warning-distance');
+            if (distanceElement) {
+                distanceElement.textContent = `${Math.round(alert.distance)}m fremover`;
             }
-            this.ui.statusElements.set(elementId, element);
-        }
-    }
-    
-    updateNavigationButtons() {
-        const startBtn = this.ui.controls.get('start-navigation');
-        const stopBtn = this.ui.controls.get('stop-navigation');
-        
-        if (startBtn && stopBtn) {
-            startBtn.disabled = this.isNavigationActive;
-            stopBtn.disabled = !this.isNavigationActive;
-        }
-    }
-    
-    updateNavigationDisplay(position) {
-        // Update speed and heading if available
-        if (position.calculatedSpeed !== undefined) {
-            const speedKmh = Math.round(position.calculatedSpeed * 3.6); // m/s to km/h
-            this.updateStatus('current-speed', speedKmh + ' km/h');
-        }
-        
-        if (position.calculatedHeading !== undefined) {
-            this.updateStatus('current-heading', Math.round(position.calculatedHeading) + '°');
-        }
-    }
-    
-    showPinWarning(alert) {
-        // Create or update warning display
-        const warningEl = document.getElementById('pin-warning');
-        if (warningEl) {
-            warningEl.style.display = 'block';
-            warningEl.querySelector('.warning-text').textContent = 
-                `PIN ${alert.pin.type} om ${Math.round(alert.distance)}m`;
+            
+            warningElement.classList.remove('hidden');
             
             // Auto-hide after 5 seconds
             setTimeout(() => {
-                warningEl.style.display = 'none';
+                warningElement.classList.add('hidden');
             }, 5000);
         }
     }
     
-    showError(message) {
-        console.error(message);
-        alert(message); // Simple error display - could be enhanced
+    /**
+     * Show route pin alert
+     */
+    showRoutePinAlert(alert) {
+        console.log('🛣️ Route pin alert:', alert);
+        // Could show different type of alert for route-based pins
     }
     
-    playAlertSound() {
-        // Play alert sound if enabled
-        if (this.config.enableSounds) {
-            // Implementation would play an audio alert
+    // ==================== SERVICE MANAGEMENT ====================
+    
+    /**
+     * Start initial background services
+     */
+    startInitialServices() {
+        // Start pin update polling
+        this.startPinUpdatePolling();
+        
+        console.log('⚙️ Background services started');
+    }
+    
+    /**
+     * Start polling for pin updates
+     */
+    startPinUpdatePolling() {
+        setInterval(async () => {
+            await this.checkForPinUpdates();
+        }, 5 * 60 * 1000); // Check every 5 minutes
+    }
+    
+    /**
+     * Check for pin updates from backend
+     */
+    async checkForPinUpdates() {
+        if (!this.lastPinUpdate) return;
+        
+        try {
+            const response = await fetch(
+                `${this.config.apiBaseUrl}/pins/changes?since=${this.lastPinUpdate}`
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.added?.length || data.updated?.length || data.deleted?.length) {
+                    this.pinManager.applyDelta(data);
+                    this.lastPinUpdate = data.timestamp;
+                    console.log('📍 Pin updates applied:', data);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Failed to check for pin updates:', error);
         }
     }
     
-    changeMapStyle(style) {
-        this.mapCore.changeStyle(style);
-    }
-    
-    updateRoutePinsList(alert) {
-        // Update route pins display
-        console.log('Route pin found:', alert);
-    }
-    
-    // ==================== PUBLIC API ====================
+    // ==================== SYSTEM STATUS ====================
     
     /**
-     * Get system status
+     * Get system component status
      */
-    getStatus() {
+    getComponentStatus() {
         return {
-            initialized: this.isInitialized,
-            navigationActive: this.isNavigationActive,
-            locationMode: this.locationProvider?.getMode(),
-            currentPosition: this.locationProvider?.getCurrentPosition(),
-            pinCount: this.pinManager?.getAllPins().length,
-            statistics: this.reportingEngine?.getStatistics()
+            locationProvider: !!this.locationProvider,
+            mapCore: this.mapCore?.isInitialized || false,
+            pinManager: !!this.pinManager,
+            proximityScanner: !!this.proximityScanner,
+            reportingEngine: !!this.reportingEngine
         };
     }
     
     /**
-     * Enable debug mode
+     * Get system statistics
      */
-    enableDebugMode() {
-        this.config.enableDebugMode = true;
-        console.log('🐛 Debug mode enabled');
+    getSystemStatistics() {
+        return {
+            mode: this.currentMode,
+            initialized: this.isInitialized,
+            pins: this.pinManager?.getStatistics(),
+            proximity: this.proximityScanner?.getStatistics(),
+            reporting: this.reportingEngine?.getStatistics(),
+            location: {
+                isTracking: this.locationProvider?.isTracking(),
+                mode: this.locationProvider?.getMode(),
+                currentPosition: this.locationProvider?.getCurrentPosition()
+            }
+        };
+    }
+    
+    /**
+     * Emit system-level event
+     */
+    emitSystemEvent(eventType, data) {
+        window.dispatchEvent(new CustomEvent(`radar:${eventType}`, { detail: data }));
+    }
+    
+    // ==================== CLEANUP ====================
+    
+    /**
+     * Clean up system resources
+     */
+    destroy() {
+        // Stop all services
+        this.stopNavigation();
         
-        // Add debug info to window
-        window.radarApp = this;
-        window.debugInfo = () => console.log(this.getStatus());
+        // Unbind events
+        this.eventBindings.forEach(({ element, eventType, handler }) => {
+            element.removeEventListener(eventType, handler);
+        });
+        this.eventBindings = [];
+        
+        // Destroy components
+        this.proximityScanner?.destroy();
+        this.mapCore?.destroy();
+        
+        this.isInitialized = false;
+        console.log('🗑️ System destroyed');
     }
 }
 
-// ==================== INITIALIZATION ====================
+// Initialize the system
+window.radarNavigationSystem = new RadarNavigationSystem();
 
-// Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌐 DOM ready, starting Radar Navigation App...');
-    
-    // Create global app instance
-    window.radarApp = new RadarNavigationApp();
-    
-    // Enable debug mode in development
-    if (window.APP_CONFIG?.enableDebug) {
-        window.radarApp.enableDebugMode();
-    }
-});
-
-// Handle page unload
-window.addEventListener('beforeunload', () => {
-    if (window.radarApp) {
-        console.log('💾 Saving state before page unload...');
-        // Any cleanup or state saving could go here
-    }
-});
+// Global convenience methods
+window.startNavigation = () => window.radarNavigationSystem.startNavigation();
+window.stopNavigation = () => window.radarNavigationSystem.stopNavigation();
+window.getSystemStatus = () => window.radarNavigationSystem.getSystemStatistics();
