@@ -56,6 +56,16 @@ class ReportingEngine extends EventTarget {
         this.startQueueProcessor();
     }
     
+    startQueueProcessor() {
+        // Start background queue processing
+        // Process queue every 30 seconds
+        setInterval(() => {
+            if (this.reportQueue.length > 0 && !this.isProcessingQueue) {
+                this.processBackendQueue();
+            }
+        }, 30000);
+    }
+
     // ==================== PIN REPORTING ====================
     
     /**

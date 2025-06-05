@@ -150,7 +150,7 @@ class RadarNavigationSystem {
             if (this.mapCore.isInitialized) {
                 resolve();
             } else {
-                this.mapCore.addEventListener('mapReady', resolve, { once: true });
+                this.mapCore.map.on('load', resolve);  // Bruk MapBox direkte
             }
         });
     }

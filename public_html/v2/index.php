@@ -301,15 +301,15 @@ if (isset($_GET['zoom'])) {
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
     
     <!-- Core System Components -->
-    <script src="location-provider.js"></script>
+    <script src="location-provider.js?<?=time()?>"></script>
     <script src="distance-calculator.js"></script>
     <script src="map-core.js"></script>
-    <script src="pin-manager.js"></script>
+    <script src="pin-manager.js?<?=time()?>"></script>
     <script src="proximity-scanner.js"></script>
-    <script src="reporting-engine.js"></script>
+    <script src="reporting-engine.js?<?=time()?>"></script>
     
     <!-- System Integration -->
-    <script src="init.js"></script>
+    <script src="init.js?<?=time()?>"></script>
 
     <!-- Application Startup -->
     <script>

@@ -43,6 +43,13 @@ class LocationProvider extends EventTarget {
         this.bindEvents();
     }
     
+    // LEGG INN bindEvents() HER - rett etter init()
+    bindEvents() {
+        // LocationProvider event bindings if needed
+        // For now, this can be empty or just a placeholder
+        console.log('LocationProvider events bound');
+    }
+
     // ==================== PUBLIC API ====================
     
     /**

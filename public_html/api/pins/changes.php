@@ -37,6 +37,7 @@ try {
             [
                 'id' => 'pin-new-001',
                 'type' => 'accident',
+                'name' => 'Radarkontroll',
                 'status' => 'active',
                 'lat' => 58.1700,
                 'lng' => 8.0100,
@@ -53,6 +54,7 @@ try {
                 'id' => 'pin-001',
                 'type' => 'radar',
                 'status' => 'active',
+                'name' => 'Radarkontroll',
                 'lat' => 58.1467,
                 'lng' => 8.0059,
                 'created_at' => '2025-01-01T10:00:00Z',

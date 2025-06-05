@@ -111,11 +111,11 @@ class PinManager {
             layout: {
                 'text-field': [
                     'case',
-                    ['==', ['get', 'type'], 'radar'], '📷',
-                    ['==', ['get', 'type'], 'accident'], '⚠️',
-                    ['==', ['get', 'type'], 'roadwork'], '🚧',
-                    ['==', ['get', 'type'], 'police'], '👮',
-                    '📍' // default
+                    ['==', ['get', 'type'], 'radar'], 'R',      // R for Radar
+                    ['==', ['get', 'type'], 'accident'], '!',   // ! for Accident  
+                    ['==', ['get', 'type'], 'roadwork'], 'W',   // W for Work
+                    ['==', ['get', 'type'], 'police'], 'P',     // P for Police
+                    'X' // default
                 ],
                 'text-size': 12,
                 'text-allow-overlap': true,
@@ -124,6 +124,40 @@ class PinManager {
         });
     }
     
+
+    /**
+    * Bind map events for pin interactions
+    */
+    bindEvents() {
+        if (!this.mapCore.map) return;
+        
+        // Handle pin clicks
+        this.mapCore.map.on('click', 'pins-layer', (e) => {
+            if (e.features.length > 0) {
+                const pinId = e.features[0].properties.id;
+                const clickHandler = this.clickHandlers.get(pinId);
+                
+                if (clickHandler) {
+                    const pin = this.getPin(pinId);
+                    clickHandler(pin, e);
+                } else {
+                    // Default click behavior - show popup
+                    this.showPinPopup(pinId, e.lngLat);
+                }
+            }
+        });
+        
+        // Change cursor on hover
+        this.mapCore.map.on('mouseenter', 'pins-layer', () => {
+            this.mapCore.map.getCanvas().style.cursor = 'pointer';
+        });
+        
+        this.mapCore.map.on('mouseleave', 'pins-layer', () => {
+            this.mapCore.map.getCanvas().style.cursor = '';
+        });
+    }
+
+
     // ==================== PUBLIC API ====================
     
     /**
@@ -195,6 +229,7 @@ class PinManager {
         return this.getAllPins().filter(pin => pin.type === pinType);
     }
     
+
     /**
      * Update map with current pins (batch operation)
      */
@@ -213,7 +248,7 @@ class PinManager {
             properties: {
                 id: pin.id,
                 type: pin.type,
-                name: pin.data.name || `${this.pinTypes[pin.type]?.name || 'Pin'}`,
+                name: pin.name || pin.data?.name || `${this.pinTypes[pin.type]?.name || 'Pin'}`,
                 ...pin.data
             }
         }));
