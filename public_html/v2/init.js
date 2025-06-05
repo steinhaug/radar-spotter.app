@@ -127,6 +127,12 @@ class RadarNavigationSystem {
         
         // Wait for map to be ready
         await this.waitForMapReady();
+
+        // Force resize after everything is loaded
+        setTimeout(() => {
+            this.mapCore.map.resize();
+        }, 500);
+
         console.log('✓ MapCore initialized');
         
         // 4. PinManager (requires MapCore)
@@ -283,6 +289,12 @@ class RadarNavigationSystem {
         // File upload
         this.bindEvent('gps-log-upload', 'change', (e) => this.handleFileUpload(e));
         
+        // Map control buttons
+        this.bindEvent('zoom-in', 'click', () => this.mapCore.map.zoomIn());
+        this.bindEvent('zoom-out', 'click', () => this.mapCore.map.zoomOut());
+        this.bindEvent('locate-me', 'click', () => this.centerOnPosition());
+        this.bindEvent('fullscreen', 'click', () => this.toggleFullscreen());
+
         console.log('✓ UI events bound');
     }
     
@@ -390,6 +402,15 @@ class RadarNavigationSystem {
         }
     }
     
+
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.getElementById('map-container').requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
     /**
      * Toggle pins visibility
      */
@@ -567,6 +588,11 @@ class RadarNavigationSystem {
     startInitialServices() {
         // Start pin update polling
         this.startPinUpdatePolling();
+    
+        // Auto-start navigation
+        setTimeout(() => {
+            this.startNavigation();
+        }, 1000); // 1 sekund delay for at alt skal være klart
         
         console.log('⚙️ Background services started');
     }

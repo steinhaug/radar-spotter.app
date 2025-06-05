@@ -302,10 +302,10 @@ if (isset($_GET['zoom'])) {
     
     <!-- Core System Components -->
     <script src="location-provider.js?<?=time()?>"></script>
-    <script src="distance-calculator.js"></script>
-    <script src="map-core.js"></script>
+    <script src="distance-calculator.js?<?=time()?>"></script>
+    <script src="map-core.js?<?=time()?>"></script>
     <script src="pin-manager.js?<?=time()?>"></script>
-    <script src="proximity-scanner.js"></script>
+    <script src="proximity-scanner.js?<?=time()?>"></script>
     <script src="reporting-engine.js?<?=time()?>"></script>
     
     <!-- System Integration -->
