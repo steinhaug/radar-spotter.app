@@ -13,7 +13,8 @@ class RadarNavigationSystem {
         this.isInitialized = false;
         this.initializationPromise = null;
         this.currentMode = 'idle'; // 'idle', 'navigation', 'simulation'
-        
+        this.addPinModeActive = false;
+
         // Configuration from PHP
         this.config = window.APP_CONFIG || {
             mapboxToken: null,
@@ -146,6 +147,15 @@ class RadarNavigationSystem {
             this.reportingEngine
         );
         console.log('✓ ProximityScanner initialized');
+
+        // 6. RouteManager (requires MapCore, ProximityScanner, PinManager)
+        this.routeManager = new RouteManager(
+            this.mapCore,
+            this.proximityScanner,
+            this.pinManager
+        );
+        console.log('✓ RouteManager initialized');
+
     }
     
     /**
@@ -422,10 +432,53 @@ class RadarNavigationSystem {
      * Toggle add pin mode
      */
     toggleAddPinMode() {
-        // This would integrate with a UI pin-adding system
-        console.log('Add pin mode toggled');
+        const btn = document.getElementById('add-pin-mode');
+        
+        if (!this.addPinModeActive) {
+            // Activate add pin mode
+            this.addPinModeActive = true;
+            btn.textContent = '❌ Avbryt';
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-warning');
+            this.mapCore.map.getCanvas().style.cursor = 'crosshair';
+            
+            // Add click handler for map
+            this.mapClickHandler = (e) => {
+                this.addPinAtLocation(e.lngLat.lng, e.lngLat.lat);
+            };
+            this.mapCore.map.on('click', this.mapClickHandler);
+            
+            this.updateStatus('gps-status', 'Klikk på kartet for å legge til PIN');
+        } else {
+            this.deactivateAddPinMode();
+        }
     }
-    
+
+    deactivateAddPinMode() {
+        this.addPinModeActive = false;
+        const btn = document.getElementById('add-pin-mode');
+        btn.textContent = '➕ Legg til Pin';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-secondary');
+        this.mapCore.map.getCanvas().style.cursor = '';
+        
+        if (this.mapClickHandler) {
+            this.mapCore.map.off('click', this.mapClickHandler);
+            this.mapClickHandler = null;
+        }
+    }
+
+    addPinAtLocation(lng, lat) {
+        const pinId = this.pinManager.insertPin(lng, lat, 'radar', {
+            name: `Ny kontroll ${Date.now()}`,
+            created_by: 'user'
+        });
+        
+        this.deactivateAddPinMode();
+        this.updateStatus('gps-status', 'PIN lagt til');
+        console.log('PIN added:', pinId);
+    }
+
     // ==================== FILE HANDLING ====================
     
     /**

@@ -44,6 +44,7 @@ if (isset($_GET['zoom'])) {
     
     <!-- Application Styles -->
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="route-styles.css">
     
     <!-- Progressive Web App -->
     <link rel="manifest" href="/manifest.json">
@@ -307,7 +308,9 @@ if (isset($_GET['zoom'])) {
     <script src="pin-manager.js?<?=time()?>"></script>
     <script src="proximity-scanner.js?<?=time()?>"></script>
     <script src="reporting-engine.js?<?=time()?>"></script>
-    
+
+    <script src="route-manager.js?<?=time()?>"></script>
+
     <!-- System Integration -->
     <script src="init.js?<?=time()?>"></script>
 

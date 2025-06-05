@@ -1,0 +1,597 @@
+/* route-styles.css - Styling for route planning panels */
+
+/* ==================== ROUTE PLANNING PANEL ==================== */
+
+.route-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    background: rgba(45, 45, 45, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 900;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.route-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 123, 255, 0.1);
+    border-radius: 12px 12px 0 0;
+}
+
+.route-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.panel-toggle {
+    background: none;
+    border: none;
+    color: #cccccc;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.panel-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.route-content {
+    padding: 20px;
+}
+
+/* ==================== ROUTE INPUT FIELDS ==================== */
+
+.route-field-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.route-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #cccccc;
+    margin-bottom: 8px;
+}
+
+.route-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.route-input {
+    width: 100%;
+    padding: 12px 40px 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.route-input:focus {
+    outline: none;
+    border-color: #007bff;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.route-input::placeholder {
+    color: #888888;
+}
+
+.field-reset {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #888888;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.field-reset:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.field-reset.hidden {
+    display: none;
+}
+
+/* ==================== SEARCH DROPDOWN ==================== */
+
+.search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(35, 35, 35, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1001;
+    margin-top: 4px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.search-dropdown.hidden {
+    display: none;
+}
+
+.dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgba(0, 123, 255, 0.2);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.item-name {
+    color: #ffffff;
+    font-weight: 500;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.item-address {
+    color: #cccccc;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* ==================== ROUTE OPTIONS ==================== */
+
+.route-options {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.route-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #cccccc;
+    user-select: none;
+}
+
+.route-checkbox:last-child {
+    margin-bottom: 0;
+}
+
+.route-checkbox input[type="checkbox"] {
+    margin: 0;
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.checkmark {
+    position: relative;
+    margin-right: 10px;
+}
+
+/* Custom checkbox styling */
+.route-checkbox input[type="checkbox"] {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #666666;
+    border-radius: 3px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.route-checkbox input[type="checkbox"]:checked {
+    background: #007bff;
+    border-color: #007bff;
+}
+
+.route-checkbox input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: -2px;
+    left: 2px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* ==================== ROUTE ACTIONS ==================== */
+
+.route-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.route-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+}
+
+.route-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.route-btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.route-btn.primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.route-btn.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0056b3, #004085);
+}
+
+.route-btn.secondary {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+}
+
+.route-btn.secondary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #495057, #343a40);
+}
+
+/* ==================== ROUTE INFO ==================== */
+
+.route-info {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.route-info.hidden {
+    display: none;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-label {
+    color: #cccccc;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #ffffff;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+/* ==================== ROUTE REPORT PANEL ==================== */
+
+.route-report {
+    position: absolute;
+    top: 400px;
+    right: 20px;
+    width: 320px;
+    background: rgba(220, 53, 69, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(220, 53, 69, 0.4);
+    z-index: 950;
+    color: #ffffff;
+    animation: slideInRight 0.3s ease;
+}
+
+.report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px 12px 0 0;
+}
+
+.report-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.report-close {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.report-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.report-content {
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* ==================== REPORT PIN ITEMS ==================== */
+
+.report-pin-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.report-pin-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.report-pin-item:last-child {
+    margin-bottom: 0;
+}
+
+.pin-info {
+    flex: 1;
+}
+
+.pin-name {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.pin-distance {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.pin-type {
+    font-size: 20px;
+    margin-left: 12px;
+}
+
+/* ==================== PIN POPUP STYLING ==================== */
+
+.pin-popup {
+    color: #ffffff;
+    background: #2d2d2d;
+    border-radius: 8px;
+    padding: 16px;
+    min-width: 200px;
+}
+
+.pin-popup h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.pin-popup p {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #cccccc;
+}
+
+.pin-popup p:last-child {
+    margin-bottom: 0;
+}
+
+.pin-popup strong {
+    color: #ffffff;
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+@media (max-width: 768px) {
+    .route-panel,
+    .route-report {
+        width: calc(100vw - 40px);
+        right: 20px;
+        left: 20px;
+    }
+    
+    .route-panel {
+        top: 10px;
+    }
+    
+    .route-report {
+        top: auto;
+        bottom: 20px;
+    }
+    
+    .route-content {
+        padding: 16px;
+    }
+    
+    .route-actions {
+        gap: 8px;
+    }
+    
+    .route-btn {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+    
+    .search-dropdown {
+        max-height: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    .route-panel,
+    .route-report {
+        width: calc(100vw - 20px);
+        right: 10px;
+        left: 10px;
+    }
+    
+    .route-panel {
+        top: 10px;
+    }
+    
+    .route-content {
+        padding: 12px;
+    }
+    
+    .route-field-group {
+        margin-bottom: 16px;
+    }
+    
+    .route-input {
+        padding: 10px 36px 10px 12px;
+        font-size: 13px;
+    }
+    
+    .route-header h4 {
+        font-size: 14px;
+    }
+    
+    .report-header h4 {
+        font-size: 14px;
+    }
+    
+    .pin-name {
+        font-size: 13px;
+    }
+    
+    .pin-distance {
+        font-size: 11px;
+    }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+
+.route-btn:focus,
+.route-input:focus,
+.dropdown-item:focus,
+.report-pin-item:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.route-checkbox input[type="checkbox"]:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .route-panel,
+    .route-report {
+        border: 2px solid #ffffff;
+    }
+    
+    .route-input {
+        border: 2px solid #ffffff;
+    }
+    
+    .route-btn {
+        border: 1px solid #ffffff;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .route-panel,
+    .route-report,
+    .route-btn,
+    .dropdown-item,
+    .report-pin-item {
+        transition: none;
+        animation: none;
+    }
+    
+    .route-btn:hover,
+    .report-pin-item:hover {
+        transform: none;
+    }
+}
