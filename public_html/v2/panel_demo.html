@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Manager Demo</title>
+    <style>
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Demo content area */
+        .demo-content {
+            padding: 20px;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        .demo-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .demo-description {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .demo-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .demo-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Floating panel base styles */
+        .floating-panel {
+            background-color: rgba(45, 45, 45, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 280px;
+            max-width: 400px;
+            position: absolute;
+            z-index: 1000;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px 12px 0 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        }
+
+        .panel-header h4 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .panel-content {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        /* Panel content styling */
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-field {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #ffffff;
+            padding: 10px 12px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+        }
+
+        .panel-btn {
+            background-color: #007bff;
+            border: none;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .panel-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .panel-btn.secondary {
+            background-color: #6c757d;
+        }
+
+        .panel-btn.secondary:hover {
+            background-color: #545b62;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .status-value {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        /* Quick action buttons */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .quick-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 10px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .quick-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .demo-title {
+                font-size: 2rem;
+            }
+            
+            .demo-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .demo-btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo Content -->
+    <div class="demo-content">
+        <h1 class="demo-title">Panel Manager Demo</h1>
+        <p class="demo-description">
+            Drag panels around, collapse/expand them, and test responsive behavior
+        </p>
+        
+        <div class="demo-controls">
+            <button class="demo-btn" onclick="createNewPanel()">Create New Panel</button>
+            <button class="demo-btn" onclick="toggleAllPanels()">Toggle All Panels</button>
+            <button class="demo-btn" onclick="resetPanelPositions()">Reset Positions</button>
+            <button class="demo-btn" onclick="showHiddenPanel()">Show Hidden Panel</button>
+        </div>
+    </div>
+
+    <!-- Panel 1: Control Panel -->
+    <div id="control-panel" class="floating-panel" style="top: 20px; left: 20px;">
+        <div class="panel-header">
+            <h4>🎛️ Control Center</h4>
+            <button class="panel-toggle">−</button>
+        </div>
+        <div class="panel-content">
+            <div class="panel-section">
+                <div class="section-title">System Controls</div>
+                <div class="control-group">
+                    <button class="panel-btn">Start Process</button>
+                    <button class="panel-btn secondary">Stop Process</button>
+                    <button class="panel-btn">Reset System</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Settings</div>
+                <div class="control-group">
+                    <input type="text" class="input-field" placeholder="Enter configuration...">
+                    <button class="panel-btn">Apply Settings</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Quick Actions</div>
+                <div class="quick-actions">
+                    <button class="quick-btn">📊 Reports</button>
+                    <button class="quick-btn">⚙️ Config</button>
+                    <button class="quick-btn">🔧 Tools</button>
+                    <button class="quick-btn">📁 Files</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 2: Status Panel -->
+    <div id="status-panel" class="floating-panel" style="top: 20px; right: 20px;">
+        <div class="panel-header">
+            <h4>📈 System Status</h4>
+            <button class="panel-toggle">−</button>
+        </div>
+        <div class="panel-content">
+            <div class="panel-section">
+                <div class="section-title">Current Status</div>
+                <div class="control-group">
+                    <div class="status-item">
+                        <span class="status-label">System:</span>
+                        <span class="status-value">Online</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">CPU Usage:</span>
+                        <span class="status-value">45%</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Memory:</span>
+                        <span class="status-value">2.1 GB</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Uptime:</span>
+                        <span class="status-value">2d 14h</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Active Users:</span>
+                        <span class="status-value">127</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Network</div>
+                <div class="control-group">
+                    <div class="status-item">
+                        <span class="status-label">Connection:</span>
+                        <span class="status-value">Stable</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Latency:</span>
+                        <span class="status-value">12ms</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Bandwidth:</span>
+                        <span class="status-value">94.3 Mbps</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 3: Tools Panel -->
+    <div id="tools-panel" class="floating-panel" style="bottom: 20px; left: 50%; transform: translateX(-50%);">
+        <div class="panel-header">
+            <h4>🔧 Developer Tools</h4>
+            <button class="panel-toggle">−</button>
+        </div>
+        <div class="panel-content">
+            <div class="panel-section">
+                <div class="section-title">Debug Console</div>
+                <div class="control-group">
+                    <textarea class="input-field" rows="4" placeholder="Enter JavaScript code..."></textarea>
+                    <button class="panel-btn">Execute</button>
+                    <button class="panel-btn secondary">Clear</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Panel Actions</div>
+                <div class="control-group">
+                    <button class="panel-btn" onclick="window.panelManager.bringToFront('control-panel')">Focus Control Panel</button>
+                    <button class="panel-btn" onclick="window.panelManager.hidePanel('status-panel')">Hide Status Panel</button>
+                    <button class="panel-btn secondary" onclick="window.panelManager.collapseAllPanels()">Collapse All</button>
+                    <button class="panel-btn secondary" onclick="window.panelManager.expandAllPanels()">Expand All</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Info</div>
+                <div class="control-group">
+                    <div class="status-item">
+                        <span class="status-label">Active Panels:</span>
+                        <span class="status-value" id="panel-count">3</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Screen Size:</span>
+                        <span class="status-value" id="screen-size">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // panel-manager.js - Complete panel management system
+
+        class PanelManager {
+            constructor() {
+                this.panels = new Map();
+                this.dragState = {
+                    isDragging: false,
+                    currentPanel: null,
+                    startX: 0,
+                    startY: 0,
+                    startLeft: 0,
+                    startTop: 0
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupGlobalEventListeners();
+                this.initializeExistingPanels();
+            }
+            
+            initializeExistingPanels() {
+                document.querySelectorAll('.floating-panel').forEach(panel => {
+                    const id = panel.id;
+                    if (id && !this.panels.has(id)) {
+                        const header = panel.querySelector('.panel-header');
+                        const content = panel.querySelector('.panel-content');
+                        
+                        this.registerPanel(id, {
+                            element: panel,
+                            header: header,
+                            content: content,
+                            draggable: true,
+                            collapsible: true,
+                            resizable: false,
+                            isCollapsed: false,
+                            originalPosition: this.getElementPosition(panel)
+                        });
+                        
+                        this.makeDragable(id);
+                    }
+                });
+            }
+            
+            registerPanel(id, panelData) {
+                this.panels.set(id, panelData);
+            }
+            
+            makeDragable(panelId) {
+                const panelData = this.panels.get(panelId);
+                if (!panelData || !panelData.draggable) return;
+                
+                const header = panelData.header;
+                if (!header) return;
+                
+                header.style.cursor = 'move';
+                header.setAttribute('data-panel-id', panelId);
+            }
+            
+            setupGlobalEventListeners() {
+                document.addEventListener('mousedown', (e) => this.handleDragStart(e));
+                document.addEventListener('mousemove', (e) => this.handleDragMove(e));
+                document.addEventListener('mouseup', (e) => this.handleDragEnd(e));
+                
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('panel-toggle')) {
+                        const panel = e.target.closest('.floating-panel');
+                        if (panel) this.togglePanel(panel.id);
+                    }
+                });
+            }
+            
+            handleDragStart(e) {
+                const header = e.target.closest('.panel-header');
+                if (!header || e.target.classList.contains('panel-toggle')) return;
+                
+                const panelId = header.getAttribute('data-panel-id');
+                if (!panelId) return;
+                
+                const panelData = this.panels.get(panelId);
+                if (!panelData || !panelData.draggable) return;
+                
+                e.preventDefault();
+                
+                const rect = panelData.element.getBoundingClientRect();
+                
+                this.dragState = {
+                    isDragging: true,
+                    currentPanel: panelId,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    startLeft: rect.left,
+                    startTop: rect.top
+                };
+                
+                this.bringToFront(panelId);
+                panelData.element.classList.add('dragging');
+                document.body.style.userSelect = 'none';
+            }
+            
+            handleDragMove(e) {
+                if (!this.dragState.isDragging) return;
+                
+                e.preventDefault();
+                
+                const deltaX = e.clientX - this.dragState.startX;
+                const deltaY = e.clientY - this.dragState.startY;
+                
+                const newLeft = this.dragState.startLeft + deltaX;
+                const newTop = this.dragState.startTop + deltaY;
+                
+                const constrainedPosition = this.constrainToViewport(newLeft, newTop, this.dragState.currentPanel);
+                
+                const panelData = this.panels.get(this.dragState.currentPanel);
+                if (panelData) {
+                    panelData.element.style.left = constrainedPosition.left + 'px';
+                    panelData.element.style.top = constrainedPosition.top + 'px';
+                    panelData.element.style.right = 'auto';
+                    panelData.element.style.bottom = 'auto';
+                    panelData.element.style.transform = 'none';
+                }
+            }
+            
+            handleDragEnd(e) {
+                if (!this.dragState.isDragging) return;
+                
+                const panelData = this.panels.get(this.dragState.currentPanel);
+                if (panelData) {
+                    panelData.element.classList.remove('dragging');
+                }
+                
+                document.body.style.userSelect = '';
+                
+                this.dragState = {
+                    isDragging: false,
+                    currentPanel: null,
+                    startX: 0,
+                    startY: 0,
+                    startLeft: 0,
+                    startTop: 0
+                };
+            }
+            
+            constrainToViewport(left, top, panelId) {
+                const panelData = this.panels.get(panelId);
+                if (!panelData) return { left, top };
+                
+                const panel = panelData.element;
+                const rect = panel.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                const constrainedLeft = Math.max(0, Math.min(left, viewportWidth - rect.width));
+                const constrainedTop = Math.max(0, Math.min(top, viewportHeight - rect.height));
+                
+                return { left: constrainedLeft, top: constrainedTop };
+            }
+            
+            togglePanel(panelId) {
+                const panelData = this.panels.get(panelId);
+                if (!panelData || !panelData.collapsible) return;
+                
+                const panel = panelData.element;
+                const content = panelData.content;
+                const toggleBtn = panelData.header.querySelector('.panel-toggle');
+                
+                panelData.isCollapsed = !panelData.isCollapsed;
+                
+                if (panelData.isCollapsed) {
+                    content.style.display = 'none';
+                    panel.classList.add('collapsed');
+                    if (toggleBtn) toggleBtn.textContent = '+';
+                } else {
+                    content.style.display = 'block';
+                    panel.classList.remove('collapsed');
+                    if (toggleBtn) toggleBtn.textContent = '−';
+                }
+            }
+            
+            bringToFront(panelId) {
+                const panelData = this.panels.get(panelId);
+                if (!panelData) return;
+                
+                let maxZIndex = 1000;
+                this.panels.forEach((data) => {
+                    const zIndex = parseInt(data.element.style.zIndex) || 1000;
+                    maxZIndex = Math.max(maxZIndex, zIndex);
+                });
+                
+                panelData.element.style.zIndex = maxZIndex + 1;
+            }
+            
+            hidePanel(panelId) {
+                const panelData = this.panels.get(panelId);
+                if (panelData) {
+                    panelData.element.style.display = 'none';
+                }
+            }
+            
+            showPanel(panelId) {
+                const panelData = this.panels.get(panelId);
+                if (panelData) {
+                    panelData.element.style.display = 'block';
+                    this.bringToFront(panelId);
+                }
+            }
+            
+            movePanel(panelId, position) {
+                const panelData = this.panels.get(panelId);
+                if (!panelData) return;
+                
+                const element = panelData.element;
+                
+                if (position.left !== undefined) {
+                    element.style.left = position.left;
+                    element.style.right = 'auto';
+                }
+                if (position.top !== undefined) {
+                    element.style.top = position.top;
+                    element.style.bottom = 'auto';
+                }
+                if (position.right !== undefined) {
+                    element.style.right = position.right;
+                    element.style.left = 'auto';
+                }
+                if (position.bottom !== undefined) {
+                    element.style.bottom = position.bottom;
+                    element.style.top = 'auto';
+                }
+                if (position.transform !== undefined) {
+                    element.style.transform = position.transform;
+                }
+            }
+            
+            createPanel(config) {
+                const {
+                    id,
+                    title,
+                    content = '',
+                    position = { top: '20px', left: '20px' },
+                    draggable = true,
+                    collapsible = true
+                } = config;
+                
+                const panel = document.createElement('div');
+                panel.id = id;
+                panel.className = 'floating-panel';
+                panel.style.cssText = `
+                    position: absolute;
+                    top: ${position.top};
+                    left: ${position.left};
+                `;
+                
+                const header = document.createElement('div');
+                header.className = 'panel-header';
+                header.innerHTML = `
+                    <h4>${title}</h4>
+                    ${collapsible ? '<button class="panel-toggle">−</button>' : ''}
+                `;
+                
+                const contentContainer = document.createElement('div');
+                contentContainer.className = 'panel-content';
+                contentContainer.innerHTML = content;
+                
+                panel.appendChild(header);
+                panel.appendChild(contentContainer);
+                
+                document.body.appendChild(panel);
+                
+                this.registerPanel(id, {
+                    element: panel,
+                    header: header,
+                    content: contentContainer,
+                    draggable: draggable,
+                    collapsible: collapsible,
+                    isCollapsed: false,
+                    originalPosition: { ...position }
+                });
+                
+                if (draggable) this.makeDragable(id);
+                
+                return panel;
+            }
+            
+            removePanel(panelId) {
+                const panelData = this.panels.get(panelId);
+                if (panelData) {
+                    panelData.element.remove();
+                    this.panels.delete(panelId);
+                }
+            }
+            
+            getAllPanels() {
+                return Array.from(this.panels.keys());
+            }
+            
+            collapseAllPanels() {
+                this.panels.forEach((panelData, panelId) => {
+                    if (panelData.collapsible && !panelData.isCollapsed) {
+                        this.togglePanel(panelId);
+                    }
+                });
+            }
+            
+            expandAllPanels() {
+                this.panels.forEach((panelData, panelId) => {
+                    if (panelData.collapsible && panelData.isCollapsed) {
+                        this.togglePanel(panelId);
+                    }
+                });
+            }
+            
+            getElementPosition(element) {
+                return {
+                    left: element.style.left || '20px',
+                    top: element.style.top || '20px'
+                };
+            }
+        }
+
+        // Initialize panel manager
+        window.panelManager = new PanelManager();
+    </script>
+    
+    <script>
+        // Demo functionality
+        let panelCounter = 4;
+
+        function createNewPanel() {
+            const panelId = `demo-panel-${panelCounter}`;
+            
+            window.panelManager.createPanel({
+                id: panelId,
+                title: `🆕 Dynamic Panel ${panelCounter}`,
+                content: `
+                    <div class="panel-section">
+                        <div class="section-title">Dynamically Created</div>
+                        <div class="control-group">
+                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 10px;">
+                                This panel was created programmatically using the Panel Manager API.
+                            </p>
+                            <button class="panel-btn" onclick="window.panelManager.removePanel('${panelId}')">
+                                Remove This Panel
+                            </button>
+                        </div>
+                    </div>
+                `,
+                position: { 
+                    top: (100 + (panelCounter * 50)) + 'px', 
+                    left: (200 + (panelCounter * 30)) + 'px' 
+                },
+                draggable: true,
+                collapsible: true
+            });
+            
+            panelCounter++;
+            updatePanelCount();
+        }
+
+        function toggleAllPanels() {
+            const panels = window.panelManager.getAllPanels();
+            panels.forEach(panelId => {
+                window.panelManager.togglePanel(panelId);
+            });
+        }
+
+        function resetPanelPositions() {
+            window.panelManager.movePanel('control-panel', { left: '20px', top: '20px' });
+            
+            const statusPanel = window.panelManager.panels.get('status-panel');
+            if (statusPanel) {
+                statusPanel.element.style.left = 'auto';
+                statusPanel.element.style.right = '20px';
+                statusPanel.element.style.top = '20px';
+                statusPanel.element.style.transform = 'none';
+            }
+            
+            const toolsPanel = window.panelManager.panels.get('tools-panel');
+            if (toolsPanel) {
+                toolsPanel.element.style.left = '50%';
+                toolsPanel.element.style.top = 'auto';
+                toolsPanel.element.style.bottom = '20px';
+                toolsPanel.element.style.right = 'auto';
+                toolsPanel.element.style.transform = 'translateX(-50%)';
+            }
+        }
+
+        function showHiddenPanel() {
+            window.panelManager.showPanel('status-panel');
+        }
+
+        function updatePanelCount() {
+            const count = window.panelManager.getAllPanels().length;
+            document.getElementById('panel-count').textContent = count;
+        }
+
+        function updateScreenSize() {
+            document.getElementById('screen-size').textContent = 
+                `${window.innerWidth}×${window.innerHeight}`;
+        }
+
+        // Update info periodically
+        setInterval(() => {
+            updatePanelCount();
+            updateScreenSize();
+        }, 1000);
+
+        // Listen for panel events
+        document.addEventListener('panelToggle', (e) => {
+            console.log('Panel toggled:', e.detail);
+        });
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            updateScreenSize();
+            
+            // Simulate some dynamic status updates
+            setInterval(() => {
+                const cpuElement = document.querySelector('[data-status="cpu"]');
+                if (cpuElement) {
+                    cpuElement.textContent = Math.floor(Math.random() * 100) + '%';
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
