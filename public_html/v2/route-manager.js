@@ -12,11 +12,19 @@ class RouteManager {
         this.toCoords = null;
         this.routePins = [];
         
+        // Navigation state
+        this.isNavigating = false;
+        this.currentInstructionIndex = 0;
+        this.currentPosition = null;
+        this.isRerouting = false;
+        this.navigationInstructions = [];
+        
         // UI elements
         this.panel = null;
         this.fromField = null;
         this.toField = null;
         this.reportPanel = null;
+        this.navigationPanel = null;
         
         // Search state
         this.searchTimeout = null;
@@ -386,6 +394,107 @@ class RouteManager {
         document.getElementById('route-distance').textContent = `${distance} km`;
         document.getElementById('route-duration').textContent = `${duration} min`;
         document.getElementById('route-info').classList.remove('hidden');
+        
+        // Extract and store navigation instructions
+        this.extractNavigationInstructions();
+        
+        // Show navigation panel
+        this.showNavigationPanel();
+    }
+    
+    extractNavigationInstructions() {
+        this.navigationInstructions = [];
+        
+        if (this.currentRoute.legs && this.currentRoute.legs.length > 0) {
+            this.currentRoute.legs.forEach(leg => {
+                if (leg.steps) {
+                    leg.steps.forEach((step, index) => {
+                        this.navigationInstructions.push({
+                            instruction: step.maneuver.instruction || 'Fortsett',
+                            distance: step.distance,
+                            duration: step.duration,
+                            type: step.maneuver.type,
+                            modifier: step.maneuver.modifier,
+                            geometry: step.geometry
+                        });
+                    });
+                }
+            });
+        }
+        
+        this.currentInstructionIndex = 0;
+    }
+    
+    showNavigationPanel() {
+        // Remove existing navigation panel
+        this.hideNavigationPanel();
+        
+        // Create navigation panel
+        this.navigationPanel = document.createElement('div');
+        this.navigationPanel.id = 'navigation-panel';
+        this.navigationPanel.className = 'navigation-panel';
+        this.navigationPanel.innerHTML = this.getNavigationPanelHTML();
+        
+        // Position below route panel
+        document.getElementById('map-container').appendChild(this.navigationPanel);
+        
+        // Bind navigation events
+        this.bindNavigationEvents();
+    }
+    
+    getNavigationPanelHTML() {
+        return `
+            <div class="nav-header">
+                <h4>🧭 Navigering</h4>
+                <button id="nav-panel-toggle" class="panel-toggle">−</button>
+            </div>
+            
+            <div class="nav-content">
+                <div class="nav-controls">
+                    <button id="start-stop-navigation" class="nav-btn primary">
+                        🧭 Start navigering
+                    </button>
+                </div>
+                
+                <div id="nav-instructions" class="nav-instructions hidden">
+                    <div class="instruction-current">
+                        <div class="instruction-icon" id="current-instruction-icon">➡️</div>
+                        <div class="instruction-text">
+                            <div class="instruction-main" id="current-instruction">Venter på start...</div>
+                            <div class="instruction-distance" id="current-distance">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-next">
+                        <div class="instruction-label">Neste:</div>
+                        <div class="instruction-preview" id="next-instruction">-</div>
+                    </div>
+                </div>
+                
+                <div id="rerouting-overlay" class="rerouting-overlay hidden">
+                    <div class="rerouting-content">
+                        <div class="rerouting-spinner"></div>
+                        <div class="rerouting-text">Re-routing...</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    bindNavigationEvents() {
+        // Navigation panel toggle
+        document.getElementById('nav-panel-toggle').addEventListener('click', () => {
+            this.toggleNavigationPanel();
+        });
+        
+        // Start/stop navigation
+        document.getElementById('start-stop-navigation').addEventListener('click', () => {
+            if (this.isNavigating) {
+                this.stopNavigation();
+            } else {
+                this.startNavigation();
+            }
+        });
     }
     
     // ==================== PIN SCANNING ====================
@@ -505,20 +614,278 @@ class RouteManager {
         }
     }
     
+    // ==================== NAVIGATION MANAGEMENT ====================
+    
+    startNavigation() {
+        if (!this.currentRoute || this.navigationInstructions.length === 0) {
+            this.showNotification('Ingen rute å navigere', 'error');
+            return;
+        }
+        
+        this.isNavigating = true;
+        this.currentInstructionIndex = 0;
+        
+        // Update UI
+        const btn = document.getElementById('start-stop-navigation');
+        btn.innerHTML = '⏹️ Stopp navigering';
+        btn.classList.remove('primary');
+        btn.classList.add('secondary');
+        
+        document.getElementById('nav-instructions').classList.remove('hidden');
+        
+        // Start GPS tracking for navigation
+        this.startNavigationTracking();
+        
+        // Update instructions
+        this.updateNavigationInstructions();
+        
+        this.showNotification('Navigering startet', 'success');
+    }
+    
+    stopNavigation() {
+        this.isNavigating = false;
+        
+        // Update UI
+        const btn = document.getElementById('start-stop-navigation');
+        btn.innerHTML = '🧭 Start navigering';
+        btn.classList.remove('secondary');
+        btn.classList.add('primary');
+        
+        document.getElementById('nav-instructions').classList.add('hidden');
+        
+        // Stop GPS tracking for navigation
+        this.stopNavigationTracking();
+        
+        this.showNotification('Navigering stoppet', 'info');
+    }
+    
+    startNavigationTracking() {
+        // Listen to GPS updates from LocationProvider
+        if (window.radarNavigationSystem && window.radarNavigationSystem.locationProvider) {
+            this.locationProvider = window.radarNavigationSystem.locationProvider;
+            this.locationProvider.onPositionUpdate((position) => {
+                if (this.isNavigating) {
+                    this.handleNavigationPositionUpdate(position);
+                }
+            });
+        }
+    }
+    
+    stopNavigationTracking() {
+        // Navigation tracking stops but GPS can continue for other purposes
+        this.currentPosition = null;
+    }
+    
+    handleNavigationPositionUpdate(position) {
+        this.currentPosition = position;
+        
+        // Calculate progress along route
+        const progress = this.calculateRouteProgress(position);
+        
+        // Update current instruction if needed
+        this.updateCurrentInstruction(progress);
+        
+        // Check if we need re-routing
+        if (this.shouldReroute(position)) {
+            this.performRerouting();
+        }
+    }
+    
+    calculateRouteProgress(position) {
+        if (!this.currentRoute || !this.currentRoute.geometry) return null;
+        
+        // Use DistanceCalculator to find closest point on route
+        const routeCoords = this.currentRoute.geometry.coordinates.map(coord => ({
+            lat: coord[1],
+            lng: coord[0]
+        }));
+        
+        const analysis = window.DistanceCalculator.analyzePointToRoute(position, routeCoords);
+        
+        return {
+            distanceFromRoute: analysis.distance,
+            distanceAlongRoute: analysis.distanceAlongRoute,
+            progress: analysis.progress
+        };
+    }
+    
+    updateCurrentInstruction(progress) {
+        if (!progress || this.navigationInstructions.length === 0) return;
+        
+        // Find appropriate instruction based on progress
+        let totalDistance = 0;
+        let newInstructionIndex = 0;
+        
+        for (let i = 0; i < this.navigationInstructions.length; i++) {
+            totalDistance += this.navigationInstructions[i].distance;
+            if (progress.distanceAlongRoute <= totalDistance) {
+                newInstructionIndex = i;
+                break;
+            }
+        }
+        
+        // Update instruction if changed
+        if (newInstructionIndex !== this.currentInstructionIndex) {
+            this.currentInstructionIndex = newInstructionIndex;
+            this.updateNavigationInstructions();
+        }
+    }
+    
+    updateNavigationInstructions() {
+        if (this.navigationInstructions.length === 0) return;
+        
+        const currentInstruction = this.navigationInstructions[this.currentInstructionIndex];
+        const nextInstruction = this.navigationInstructions[this.currentInstructionIndex + 1];
+        
+        // Update current instruction
+        document.getElementById('current-instruction').textContent = currentInstruction.instruction;
+        document.getElementById('current-distance').textContent = `${Math.round(currentInstruction.distance)}m`;
+        document.getElementById('current-instruction-icon').textContent = this.getInstructionIcon(currentInstruction.type);
+        
+        // Update next instruction
+        if (nextInstruction) {
+            document.getElementById('next-instruction').textContent = nextInstruction.instruction;
+        } else {
+            document.getElementById('next-instruction').textContent = 'Destinasjon nådd';
+        }
+    }
+    
+    getInstructionIcon(type) {
+        const icons = {
+            'turn-right': '➡️',
+            'turn-left': '⬅️',
+            'turn-straight': '⬆️',
+            'turn-slight-right': '↗️',
+            'turn-slight-left': '↖️',
+            'turn-sharp-right': '⤴️',
+            'turn-sharp-left': '⤵️',
+            'roundabout': '🔄',
+            'roundabout-exit': '🔄',
+            'merge': '🔀',
+            'on-ramp': '🛣️',
+            'off-ramp': '🛤️',
+            'fork': '🍴',
+            'continue': '⬆️',
+            'arrive': '🏁'
+        };
+        
+        return icons[type] || '➡️';
+    }
+    
+    shouldReroute(position) {
+        if (!this.currentPosition || this.isRerouting) return false;
+        
+        const progress = this.calculateRouteProgress(position);
+        
+        // Re-route if more than 100m from route for more than 10 seconds
+        if (progress && progress.distanceFromRoute > 100) {
+            // Could add timing logic here for persistence
+            return true;
+        }
+        
+        return false;
+    }
+    
+    async performRerouting() {
+        if (this.isRerouting || !this.currentPosition || !this.toCoords) return;
+        
+        this.isRerouting = true;
+        this.showReroutingOverlay();
+        
+        try {
+            // Calculate new route from current position to destination
+            const avoidHighways = document.getElementById('avoid-highways').checked;
+            const avoidTolls = document.getElementById('avoid-tolls').checked;
+            
+            let url = `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+                     `${this.currentPosition.lng},${this.currentPosition.lat};${this.toCoords.lng},${this.toCoords.lat}?` +
+                     `geometries=geojson&steps=true&overview=full&` +
+                     `access_token=${window.APP_CONFIG.mapboxToken}`;
+            
+            const excludes = [];
+            if (avoidHighways) excludes.push('motorway');
+            if (avoidTolls) excludes.push('toll');
+            if (excludes.length > 0) {
+                url += `&exclude=${excludes.join(',')}`;
+            }
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Re-routing failed');
+            
+            const data = await response.json();
+            
+            if (data.routes && data.routes.length > 0) {
+                // Update route
+                this.currentRoute = data.routes[0];
+                this.displayRoute();
+                this.extractNavigationInstructions();
+                this.updateNavigationInstructions();
+                
+                // Scan new route for pins and report them
+                await this.scanRouteForPins();
+                
+                this.showNotification('Rute oppdatert', 'success');
+            }
+            
+        } catch (error) {
+            console.error('Re-routing error:', error);
+            this.showNotification('Re-routing feilet', 'error');
+        } finally {
+            this.isRerouting = false;
+            this.hideReroutingOverlay();
+        }
+    }
+    
+    showReroutingOverlay() {
+        document.getElementById('rerouting-overlay').classList.remove('hidden');
+    }
+    
+    hideReroutingOverlay() {
+        document.getElementById('rerouting-overlay').classList.add('hidden');
+    }
+    
+    toggleNavigationPanel() {
+        const content = this.navigationPanel.querySelector('.nav-content');
+        const toggle = document.getElementById('nav-panel-toggle');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggle.textContent = '−';
+        } else {
+            content.style.display = 'none';
+            toggle.textContent = '+';
+        }
+    }
+    
+    hideNavigationPanel() {
+        if (this.navigationPanel) {
+            this.navigationPanel.remove();
+            this.navigationPanel = null;
+        }
+    }
+    
     // ==================== ROUTE MANAGEMENT ====================
     
     clearRoute() {
+        // Stop navigation if active
+        if (this.isNavigating) {
+            this.stopNavigation();
+        }
+        
         // Clear route from map
         this.clearRouteFromMap();
         
         // Reset state
         this.currentRoute = null;
         this.routePins = [];
+        this.navigationInstructions = [];
+        this.currentInstructionIndex = 0;
         
         // Hide UI elements
         document.getElementById('route-info').classList.add('hidden');
         document.getElementById('clear-route').disabled = true;
         this.hideRouteReport();
+        this.hideNavigationPanel();
         
         this.showNotification('Rute slettet', 'info');
     }
