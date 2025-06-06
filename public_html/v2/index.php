@@ -44,7 +44,7 @@ if (isset($_GET['zoom'])) {
     
     <!-- Application Styles -->
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="route-styles.css">
+    <link rel="stylesheet" href="route-styles.css?<?=time()?>">
     
     <!-- Progressive Web App -->
     <link rel="manifest" href="/manifest.json">
