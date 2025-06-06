@@ -6,7 +6,7 @@ require_once 'config.php';
 
 // Set content type and security headers
 header('Content-Type: text/html; charset=utf-8');
-header('X-Frame-Options: DENY');
+#header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('X-XSS-Protection: 1; mode=block');
 
