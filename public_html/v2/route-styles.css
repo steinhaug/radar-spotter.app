@@ -327,8 +327,8 @@
 
 .navigation-panel {
     position: absolute;
-    top: 420px; /* Below route panel */
-    right: 20px;
+    top: 20px;
+    right: 360px;
     width: 320px;
     background: rgba(40, 167, 69, 0.95);
     backdrop-filter: blur(10px);
@@ -513,21 +513,6 @@
     100% { transform: rotate(360deg); }
 }
 
-.route-report {
-    position: absolute;
-    top: 400px;
-    right: 20px;
-    width: 320px;
-    background: rgba(220, 53, 69, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(220, 53, 69, 0.4);
-    z-index: 950;
-    color: #ffffff;
-    animation: slideInRight 0.3s ease;
-}
-
 .report-header {
     display: flex;
     align-items: center;
@@ -661,7 +646,6 @@
 
 @media (max-width: 768px) {
     .route-panel,
-    .route-report,
     .navigation-panel {
         width: calc(100vw - 40px);
         right: 20px;
@@ -675,11 +659,6 @@
     .navigation-panel {
         top: auto;
         bottom: 80px;
-    }
-    
-    .route-report {
-        top: auto;
-        bottom: 20px;
     }
     
     .route-content {
@@ -702,7 +681,6 @@
 
 @media (max-width: 480px) {
     .route-panel,
-    .route-report,
     .navigation-panel {
         width: calc(100vw - 20px);
         right: 10px;
@@ -765,8 +743,7 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-    .route-panel,
-    .route-report {
+    .route-panel {
         border: 2px solid #ffffff;
     }
     
@@ -782,7 +759,6 @@
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
     .route-panel,
-    .route-report,
     .route-btn,
     .dropdown-item,
     .report-pin-item {

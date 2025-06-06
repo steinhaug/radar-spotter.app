@@ -7,8 +7,8 @@ require_once 'config.php';
 // Set content type and security headers
 header('Content-Type: text/html; charset=utf-8');
 #header('X-Frame-Options: DENY');
-header('X-Content-Type-Options: nosniff');
-header('X-XSS-Protection: 1; mode=block');
+#header('X-Content-Type-Options: nosniff');
+#header('X-XSS-Protection: 1; mode=block');
 
 // Get user preferences and location if available
 $defaultLat = DEFAULT_CENTER_LAT;
@@ -45,7 +45,8 @@ if (isset($_GET['zoom'])) {
     <!-- Application Styles -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="route-styles.css?<?=time()?>">
-    
+    <link rel="stylesheet" href="styles-extra.css?<?=time()?>">
+
     <!-- Progressive Web App -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1a1a1a">
@@ -310,6 +311,7 @@ if (isset($_GET['zoom'])) {
     <script src="reporting-engine.js?<?=time()?>"></script>
 
     <script src="route-manager.js?<?=time()?>"></script>
+    <script src="gps-simulator.js?<?=time()?>"></script>
 
     <!-- System Integration -->
     <script src="init.js?<?=time()?>"></script>

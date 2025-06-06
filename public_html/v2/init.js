@@ -503,11 +503,8 @@ class RadarNavigationSystem {
         
         const reader = new FileReader();
         reader.onload = (e) => {
-            try {
-                this.parseGPSLog(e.target.result, file.name);
-            } catch (error) {
-                console.error('Failed to parse GPS log:', error);
-                this.updateStatus('gps-status', 'GPS log parsing failed');
+            if (window.gpsSimulator) {
+                window.gpsSimulator.loadLogFile(e.target.result, file.name);
             }
         };
         reader.readAsText(file);
@@ -517,14 +514,11 @@ class RadarNavigationSystem {
      * Parse GPS log and load into simulation
      */
     parseGPSLog(content, fileName) {
-        // Simple JSON format support for now
-        try {
-            const gpsData = JSON.parse(content);
-            this.locationProvider.loadSimulationData(gpsData);
-            this.updateStatus('gps-status', `GPS log loaded: ${fileName}`);
-        } catch (error) {
-            console.error('GPS log must be in JSON format:', error);
-            this.updateStatus('gps-status', 'Invalid GPS log format');
+        if (window.gpsSimulator) {
+            window.gpsSimulator.loadLogFile(content, fileName);
+        } else {
+            console.error('GPS Simulator not available');
+            this.updateStatus('gps-status', 'GPS simulator ikke tilgjengelig');
         }
     }
     
@@ -532,129 +526,12 @@ class RadarNavigationSystem {
      * Generate GPS log from current route (placeholder)
      */
     generateFromRoute() {
-        if (this.routeManager && this.routeManager.hasActiveRoute()) {
+        if (this.routeManager?.hasActiveRoute() && window.gpsSimulator) {
             const route = this.routeManager.getCurrentRoute();
-            const gpsLog = this.convertRouteToGpsLog(route);
-            
-            if (gpsLog && gpsLog.length > 0) {
-                // Load into LocationProvider with timing
-                this.locationProvider.loadSimulationData(gpsLog, route.duration * 1000 / gpsLog.length);
-                this.updateStatus('gps-status', `GPS-logg generert: ${gpsLog.length} punkter (${Math.round(route.duration/60)} min)`);
-            } else {
-                this.updateStatus('gps-status', 'Ingen rute å konvertere');
-            }
+            window.gpsSimulator.generateFromRoute(route);
         } else {
             this.updateStatus('gps-status', 'Beregn rute først');
         }
-    }
-    
-    /**
-     * Convert Mapbox route to GPS simulation data
-     */
-    convertRouteToGpsLog(route) {
-        if (!route || !route.geometry || !route.geometry.coordinates) {
-            return [];
-        }
-        
-        const coordinates = route.geometry.coordinates;
-        const totalDuration = route.duration; // seconds
-        const gpsLog = [];
-        
-        coordinates.forEach((coord, index) => {
-            const [lng, lat] = coord;
-            
-            // Calculate progress along route (0 to 1)
-            const progress = index / (coordinates.length - 1);
-            
-            // Calculate timestamp based on progress
-            const timestamp = Date.now() + (progress * totalDuration * 1000);
-            
-            // Calculate speed based on route segments
-            let speed = 50; // Default 50 km/h
-            if (route.legs && route.legs[0] && route.legs[0].steps) {
-                // Find corresponding step for more accurate speed
-                speed = this.estimateSpeedFromRoute(route, progress);
-            }
-            
-            // Calculate heading to next point
-            let heading = 0;
-            if (index < coordinates.length - 1) {
-                const nextCoord = coordinates[index + 1];
-                heading = this.calculateHeading(lat, lng, nextCoord[1], nextCoord[0]);
-            } else if (index > 0) {
-                const prevCoord = coordinates[index - 1];
-                heading = this.calculateHeading(prevCoord[1], prevCoord[0], lat, lng);
-            }
-            
-            gpsLog.push({
-                lat: lat,
-                lng: lng,
-                speed: speed / 3.6, // Convert km/h to m/s for GPS format
-                heading: heading,
-                accuracy: 3 + Math.random() * 4, // 3-7m accuracy simulation
-                timestamp: timestamp,
-                altitude: null,
-                altitudeAccuracy: null
-            });
-        });
-        
-        return gpsLog;
-    }
-    
-    /**
-     * Estimate speed based on route progress and road type
-     */
-    estimateSpeedFromRoute(route, progress) {
-        // Simple speed estimation based on route type
-        const legs = route.legs[0];
-        if (!legs || !legs.steps) return 50;
-        
-        // Find current step based on progress
-        let accumulatedDistance = 0;
-        const totalDistance = route.distance;
-        const targetDistance = progress * totalDistance;
-        
-        for (const step of legs.steps) {
-            accumulatedDistance += step.distance;
-            if (accumulatedDistance >= targetDistance) {
-                // Estimate speed based on maneuver type and road class
-                return this.getSpeedForManeuver(step.maneuver);
-            }
-        }
-        
-        return 50; // Default
-    }
-    
-    /**
-     * Get realistic speed for maneuver type
-     */
-    getSpeedForManeuver(maneuver) {
-        const maneuverType = maneuver.type || '';
-        
-        // Speed based on maneuver type
-        if (maneuverType.includes('roundabout')) return 25;
-        if (maneuverType.includes('turn')) return 35;
-        if (maneuverType.includes('merge')) return 60;
-        if (maneuverType.includes('ramp')) return 45;
-        if (maneuverType === 'continue' || maneuverType === 'straight') return 70;
-        
-        return 50; // Default urban speed
-    }
-    
-    /**
-     * Calculate heading between two points
-     */
-    calculateHeading(lat1, lng1, lat2, lng2) {
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const lat1Rad = lat1 * Math.PI / 180;
-        const lat2Rad = lat2 * Math.PI / 180;
-        
-        const x = Math.sin(dLng) * Math.cos(lat2Rad);
-        const y = Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
-                 Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
-        
-        let heading = Math.atan2(x, y) * 180 / Math.PI;
-        return (heading + 360) % 360;
     }
     
     // ==================== UI UPDATES ====================

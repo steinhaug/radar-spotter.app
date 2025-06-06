@@ -118,6 +118,13 @@ class LocationProvider extends EventTarget {
             points: gpsLog.length,
             duration: Math.round((gpsLog.length * intervalMs) / 60000) // minutes
         });
+
+        // Connect to system status updates
+        if (window.radarNavigationSystem) {
+            window.radarNavigationSystem.updateStatus('gps-status', 
+                `Simulering klar: ${gpsLog.length} punkter (${Math.round(intervalMs * gpsLog.length / 60000)} min)`);
+        }
+
     }
     
     /**

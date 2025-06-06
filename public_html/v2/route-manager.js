@@ -63,28 +63,41 @@ class RouteManager {
             </div>
             
             <div class="route-content">
+
                 <!-- From field -->
                 <div class="route-field-group">
-                    <label class="route-label">🟢 Fra:</label>
+                    <div class="point-header">
+                        <span class="route-label">🟢 Fra:</span>
+                        <button id="use-current-location" class="use-location-btn" title="Bruk nåværende posisjon">📍</button>
+                    </div>
                     <div class="route-input-wrapper">
                         <input type="text" id="route-from" class="route-input" 
-                               placeholder="Søk startadresse..." autocomplete="off">
+                            placeholder="Søk startadresse..." autocomplete="off">
                         <button id="from-reset" class="field-reset hidden">✕</button>
+                    </div>
+                    <div class="point-coords">
+                        <small id="from-coords" class="coords-text">Ikke satt</small>
                     </div>
                     <div id="from-dropdown" class="search-dropdown hidden"></div>
                 </div>
-                
+
                 <!-- To field -->
                 <div class="route-field-group">
-                    <label class="route-label">🔴 Til:</label>
+                    <div class="point-header">
+                        <span class="route-label">🔴 Til:</span>
+                        <button id="use-map-center" class="use-location-btn" title="Bruk kartsentrum">🎯</button>
+                    </div>
                     <div class="route-input-wrapper">
                         <input type="text" id="route-to" class="route-input" 
-                               placeholder="Søk destinasjon..." autocomplete="off">
+                            placeholder="Søk destinasjon..." autocomplete="off">
                         <button id="to-reset" class="field-reset hidden">✕</button>
+                    </div>
+                    <div class="point-coords">
+                        <small id="to-coords" class="coords-text">Ikke satt</small>
                     </div>
                     <div id="to-dropdown" class="search-dropdown hidden"></div>
                 </div>
-                
+
                 <!-- Route options -->
                 <div class="route-options">
                     <label class="route-checkbox">
@@ -120,6 +133,21 @@ class RouteManager {
                         <span id="route-duration">-</span>
                     </div>
                 </div>
+
+
+                <!-- Export Options -->
+                <div class="control-section">
+                    <label class="control-label">Eksport:</label>
+                    <div class="export-options">
+                        <button id="export-gpx" class="export-btn">
+                            📁 Eksporter GPX
+                        </button>
+                        <button id="share-route" class="export-btn">
+                            🔗 Del rute
+                        </button>
+                    </div>
+                </div>
+
             </div>
         `;
     }
@@ -150,6 +178,15 @@ class RouteManager {
             this.resetField('to');
         });
         
+        // Quick location buttons
+        document.getElementById('use-current-location').addEventListener('click', () => {
+            this.useCurrentLocation();
+        });
+
+        document.getElementById('use-map-center').addEventListener('click', () => {
+            this.useMapCenter();
+        });
+
         // Action buttons
         document.getElementById('calculate-route').addEventListener('click', () => {
             this.calculateRoute();
@@ -159,6 +196,15 @@ class RouteManager {
             this.clearRoute();
         });
         
+        // Export functions
+        document.getElementById('export-gpx').addEventListener('click', () => {
+            this.exportRouteAsGpx();
+        });
+
+        document.getElementById('share-route').addEventListener('click', () => {
+            this.shareRoute();
+        });
+
         // Hide dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.route-field-group')) {
@@ -268,6 +314,12 @@ class RouteManager {
             this.toCoords = { lng: coords[0], lat: coords[1] };
         }
         
+        // Etter at coordinates er satt, legg til:
+        const coordsElement = document.getElementById(`${fieldType}-coords`);
+        if (coordsElement) {
+            coordsElement.textContent = `${coords[1].toFixed(6)}, ${coords[0].toFixed(6)}`;
+        }
+
         // Hide dropdown
         this.hideDropdown(fieldType);
         
@@ -275,6 +327,32 @@ class RouteManager {
         this.updateCalculateButton();
     }
     
+    useCurrentLocation() {
+        if (window.radarNavigationSystem && window.radarNavigationSystem.locationProvider) {
+            const position = window.radarNavigationSystem.locationProvider.getCurrentPosition();
+            if (position) {
+                this.fromField.value = 'Nåværende GPS-posisjon';
+                this.fromCoords = { lng: position.lng, lat: position.lat };
+                document.getElementById('from-coords').textContent = `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`;
+                document.getElementById('from-reset').classList.remove('hidden');
+                this.updateCalculateButton();
+            } else {
+                this.showNotification('GPS-posisjon ikke tilgjengelig', 'error');
+            }
+        }
+    }
+
+    useMapCenter() {
+        const center = this.mapCore.getCenter();
+        if (center) {
+            this.toField.value = 'Kartsentrum';
+            this.toCoords = { lng: center.lng, lat: center.lat };
+            document.getElementById('to-coords').textContent = `${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`;
+            document.getElementById('to-reset').classList.remove('hidden');
+            this.updateCalculateButton();
+        }
+    }
+
     resetField(fieldType) {
         const field = fieldType === 'from' ? this.fromField : this.toField;
         const resetBtn = document.getElementById(`${fieldType}-reset`);
@@ -531,11 +609,17 @@ class RouteManager {
         this.reportPanel.className = 'route-report';
         this.reportPanel.innerHTML = this.getReportHTML(routePins);
         
-        // Add to map container
-        document.getElementById('map-container').appendChild(this.reportPanel);
+        // Add directly to body for highest z-index priority
+        document.body.appendChild(this.reportPanel);
         
         // Bind pin click events
         this.bindReportEvents(routePins);
+        
+        // Close on ESC key
+        this.escHandler = (e) => {
+            if (e.key === 'Escape') this.hideRouteReport();
+        };
+        document.addEventListener('keydown', this.escHandler);
     }
     
     getReportHTML(routePins) {
@@ -592,6 +676,10 @@ class RouteManager {
             zoom: 15
         });
         
+        // Close modal and log TODO
+        this.hideRouteReport();
+        console.log('TODO! Her må det en drawer/skuff funksjon til.');
+
         // Show pin popup
         const popup = new mapboxgl.Popup()
             .setLngLat([pin.lng, pin.lat])
@@ -611,6 +699,12 @@ class RouteManager {
         if (this.reportPanel) {
             this.reportPanel.remove();
             this.reportPanel = null;
+        }
+        
+        // Remove ESC listener
+        if (this.escHandler) {
+            document.removeEventListener('keydown', this.escHandler);
+            this.escHandler = null;
         }
     }
     
