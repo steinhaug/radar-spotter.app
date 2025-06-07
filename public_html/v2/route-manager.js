@@ -18,7 +18,10 @@ class RouteManager {
         this.currentPosition = null;
         this.isRerouting = false;
         this.navigationInstructions = [];
-        
+
+        // Drawer state
+        this.isDrawerExpanded = true;
+
         // UI elements
         this.panel = null;
         this.fromField = null;
@@ -641,7 +644,7 @@ class RouteManager {
         });
         
         return `
-            <div class="report-header">
+            <div class="report-header" id="drawer-handle">
                 <h4>⚠️ ${count} ${plural} funnet på ruten</h4>
                 <button id="close-report" class="report-close">✕</button>
             </div>
@@ -657,6 +660,14 @@ class RouteManager {
             this.hideRouteReport();
         });
         
+        // Drawer toggle on header click
+        document.getElementById('drawer-handle').addEventListener('click', (e) => {
+            // Don't toggle if clicking close button
+            if (!e.target.closest('.report-close')) {
+                this.toggleDrawer();
+            }
+        });
+
         // Pin click events
         document.querySelectorAll('.report-pin-item').forEach(item => {
             item.addEventListener('click', () => {
@@ -676,9 +687,8 @@ class RouteManager {
             zoom: 15
         });
         
-        // Close modal and log TODO
-        this.hideRouteReport();
-        console.log('TODO! Her må det en drawer/skuff funksjon til.');
+        // Collapse drawer instead of hiding
+        this.collapseDrawer();
 
         // Show pin popup
         const popup = new mapboxgl.Popup()
@@ -708,6 +718,30 @@ class RouteManager {
         }
     }
     
+
+    // Drawer funksjoner
+    collapseDrawer() {
+        if (this.reportPanel && this.isDrawerExpanded) {
+            this.isDrawerExpanded = false;
+            this.reportPanel.classList.add('collapsed');
+        }
+    }
+
+    expandDrawer() {
+        if (this.reportPanel && !this.isDrawerExpanded) {
+            this.isDrawerExpanded = true;
+            this.reportPanel.classList.remove('collapsed');
+        }
+    }
+
+    toggleDrawer() {
+        if (this.isDrawerExpanded) {
+            this.collapseDrawer();
+        } else {
+            this.expandDrawer();
+        }
+    }
+
     // ==================== NAVIGATION MANAGEMENT ====================
     
     startNavigation() {

@@ -771,3 +771,46 @@
         transform: none;
     }
 }
+
+
+
+
+/* DRAWE */
+
+/* Collapsed drawer state */
+.route-report.collapsed {
+    transform: translateY(calc(100% - 80px)); /* Show only header */
+    transition: transform 0.3s ease;
+}
+
+.route-report.collapsed .report-content {
+    pointer-events: none; /* Disable interaction when collapsed */
+}
+
+/* Make header clickable for expand/collapse */
+.report-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.report-header:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Drag handle more visible */
+.report-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+    transition: background 0.2s ease;
+}
+
+.report-header:hover::before {
+    background: rgba(255, 255, 255, 0.8);
+}
