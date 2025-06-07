@@ -424,6 +424,21 @@ if (isset($_GET['zoom'])) {
             });
         });
 
+
+        // Orientation change detection
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                if (window.orientation === 90 || window.orientation === -90) {
+                    console.log('TODO - implement layout for landscape');
+                }
+                // Resize map after orientation change
+                if (window.radarNavigationSystem?.mapCore?.map) {
+                    window.radarNavigationSystem.mapCore.map.resize();
+                }
+            }, 100);
+        });
+
+
         // Development helpers
         <?php if (ENVIRONMENT === 'development'): ?>
         window.dev = {
